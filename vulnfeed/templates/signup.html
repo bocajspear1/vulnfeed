@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Sign Up - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #login-button {
+                width: 100%;
+            }
+        </style>
+
+    </head>
+    <body>
+        <div class="container">
+            <div class="alert alert-danger" style="{{ 'display:none' if not server_error }}" role="alert">
+                {{ server_error }}
+            </div>
+            <form action="/signup" method="post" novalidate id="signup-form">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email address" name="email" required>
+                    <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                    <div class="invalid-feedback">
+                        Invalid email address
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email2">Verify Email address</label>
+                    <input type="email" class="form-control" id="email2" aria-describedby="emailHelp" placeholder="Verify email address" name="email2" required>
+                    <div class="invalid-feedback" id="email2-error">
+                        Invalid email address
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                </div>
+                <div class="form-group">
+                    <label for="password2">Verify Password</label>
+                    <input type="password" class="form-control" id="password2" name="password2" placeholder="Password">
+                </div>
+                <button type="submit" class="btn btn-primary" id="signup-button">Sign Up!</button>
+            </form>
+
+        </div>
+        <script>
+            $("#signup-button").click(function(e) {
+                var valid = true;
+                $("#email").removeClass(":invalid");
+                $("#email2").removeClass(":invalid");
+                // Validate emails
+                if (!$("#email").val().match(/^\S+@\S+$/)) {
+                    
+                    $("#email").addClass(":invalid");
+                    valid = false;
+                }
+                if (!$("#email2").val().match(/^\S+@\S+$/)) {
+                    $("#email2-error").text("Invalid email address");
+                    $("#email2").addClass(":invalid");
+                    valid = false;
+                }
+                if ($("#email").val()!=$("#email2").val()) {
+                    $("#email2-error").text("Email does not match");
+                    $("#email2").addClass(":invalid");
+                    valid = false;
+                }
+                $("#signup-form").addClass("was-validated");
+                if (!valid) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+        </script>
+    </body>
+</html>

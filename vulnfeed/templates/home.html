@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>Home - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #main {
+                margin-top: 90px;
+            }
+            .rulesSort {
+                padding: 0px;
+                margin: 0px;
+                padding: 10px;
+                width: 100%;
+                box-sizing: border-box;
+                background-color: #EDEDED;
+                list-style: none;
+                border: 1px solid #D6D6D6;
+                
+            }
+
+            .rulesSort li {
+                padding: 5px;
+            }
+
+            .rulesSort li pre {
+                border: 1px solid #CFCFCF;
+                background-color: white;
+                padding: 7px;
+            }
+        </style>
+    </head>
+    <body>
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            <div class="row">
+                <div class="col">
+                    <button id="update-button" class="btn btn-success btn-block">Update</button>
+                </div>
+            </div>
+            <div class="row" id="days-select">
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="sundayCheckbox" value="1"> Sunday
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="mondayCheckbox" value="2"> Monday
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="tuesdayCheckbox" value="3"> Tuesday
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="Checkbox" value="4"> Wednesday
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="Checkbox" value="5"> Thursday
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="Checkbox" value="6"> Friday
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <label class="form-check-label">
+                        <input class="form-check-input" type="checkbox" id="Checkbox" value="7"> Friday
+                    </label>
+                </div>
+            </div>
+           
+            <div class="row">
+                <div class="col">
+                    <h2>Added Rules</h2>
+                    <ul id="added_rules_list" class="rulesSort">
+
+                    </ul>
+                </div>
+                <div class="col">
+                    <h2>Available Rules</h2>
+                    <ul id="all_rules_list" class="rulesSort">
+                            
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        {% include 'footer.html' %}
+
+        <script>
+
+            function get_user_rules() {
+                var my_rules = $("#added_rules_list li");
+                var return_list = [];
+                for (var i = 0; i < my_rules.length; i++) {
+                    var rule_id =  my_rules[i].id;
+                    var item = {
+                        "id": rule_id,
+                        "weight": $("#" + rule_id + "-weight").val()
+                    }
+                    return_list.push(item);
+                }
+                return return_list;
+            }
+
+            function get_days() {
+                var new_days = [];
+                var checkboxes = $("#days-select input");
+                for (var i = 0; i < checkboxes.length; i++) {
+                    var checkbox = $(checkboxes[i]);
+                    if (checkbox.prop("checked") == true) {
+                        new_days.push(parseInt(checkbox.val()));
+                    }
+                }
+                return new_days;
+            }
+
+            $("#update-button").click(function(){
+                
+                var new_config = {};
+
+                new_config['rules'] = get_user_rules();
+                new_config['days'] = get_days();
+                
+                $.ajax({
+                    url: "/update_user_config",
+                    type: "POST",
+                    data: JSON.stringify(new_config),
+                    contentType: "application/json; charset=utf-8",
+                    success: function(result) { console.log(result); }
+                });
+            });
+
+
+            function make_item(rule_id, name, description, rule, option, enabled) {
+                var base = "<li class='ui-state-default' id='" + rule_id + "'><h4>" + name + "</h4>" + description + "<pre>" +rule  + "</pre>Weight: <select id='" + rule_id + "-weight' ";
+                
+                if (enabled!==true) {
+                    base += "disabled"
+                }
+                base += ">";
+                if (option == "high") {
+                    base += "<option value='high' selected>High</option>";
+                } else {
+                    base += "<option value='high'>High</option>";
+                }
+                if (option == "medium") {
+                    base += "<option value='medium' selected>Medium</option>";
+                } else {
+                    base += "<option value='medium'>Medium</option>";
+                }
+                if (option == "low") {
+                    base += "<option value='low' selected>Low</option>";
+                } else {
+                    base += "<option value='low'>Low</option>";
+                }
+                base += "</select></li>";
+                return base;
+            }
+
+            function show_days(days) {
+                var checkboxes = $("#days-select input");
+                for (var i = 0; i < checkboxes.length; i++) {
+                    var checkbox = $(checkboxes[i]);
+                    var day = parseInt(checkbox.val());
+                    if (days.indexOf(day) != -1) {
+                        checkbox.prop( "checked", true );
+                    }
+                }
+            }
+
+            function load_user_config(callback) {
+                $.get("/user_config.json", function(user_config){
+                    if (user_config) {
+                        console.log(user_config)
+                        show_days(user_config['days']);
+                        var user_rules = user_config['rules'];
+
+                        var added_rules = [];
+                        for (var i = 0; i < user_rules.length; i++) {
+                            added_rules.push(user_rules[i]["id"]);
+                            $("#added_rules_list").append(make_item(user_rules[i]["id"], user_rules[i]['name'], user_rules[i]['description'], user_rules[i]['rule'], user_rules[i]['weight'], true));
+                        }
+                        callback(null, added_rules);
+                    } else {
+                        callback(false, null);
+                    }
+                });
+            }
+
+            function load_all_rules(added_rules, callback) {
+                $.get("/all_rules.json", function(all_rules){
+                    console.log(added_rules)
+                    if (all_rules) {
+
+                        for (var i = 0; i < all_rules.length; i++) {
+                            var rule_id = all_rules[i]['id'];
+                            console.log(rule_id)
+                            if (added_rules.indexOf(rule_id) == -1) {
+                                $("#all_rules_list").append(make_item(rule_id, all_rules[i]['name'], all_rules[i]['description'], all_rules[i]['rule'], "low", false));
+                            }
+                            
+                        }
+                        callback(null, true);
+                    } else {
+                        callback(false, null);
+                    }
+                });
+            }   
+
+            function init_lists() {
+                load_user_config(function(err, user_rules){
+                    load_all_rules(user_rules, function(err, result){
+                        $( function() {
+                            $( "#added_rules_list, #all_rules_list" ).sortable({
+                                connectWith: ".rulesSort",
+                                receive: function( event, ui ) {
+                                    var item_id = ui.item[0].id;
+                                    var sender = ui.sender[0].id;
+                                    if (sender == "added_rules_list") {
+                                        $("#" + item_id + "-weight").prop("disabled", true);
+                                    } else if (sender == "all_rules_list") {
+                                        $("#" + item_id + "-weight").prop("disabled", false);
+                                    }
+                                }
+                            }).disableSelection();
+                        } );
+                        
+                    });
+                });
+            }
+           
+            init_lists();
+            
+        </script>
+    </body>
+</html>

@@ -1,0 +1,10 @@
+{
+    "smtp": {
+        "host": "example.com",
+        "port": 465,
+        "user": "example@jexample.com",
+        "password" : "PASSWORD"
+    },
+    "mongodb": "mongodb://someplace",
+    "secret": "SUPER_SECRET_KEY"
+}

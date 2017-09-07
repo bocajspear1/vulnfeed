@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>VulnFeed Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+
+        #header {
+            text-align: center;
+        }
+        #high-importance-header {
+            background-color: #FFD7BD;
+        }
+        #medium-importance-header {
+            background-color: #FFEEBD;
+        }
+        #low-importance-header {
+            background-color: #D6D6D6;
+        }
+        .report-table {
+            margin-left:auto;
+            margin-right:auto;
+        }
+        .report-table tr td {
+            padding: 15px;
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F7F7F7;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr><td id="header"><h2>VulnFeed Report</h2></td></tr>
+        <tr><td style="text-align: center;">This is your VulnFeed report for today.<br>{{ vulncount }} vulnerabilies have been reported.<br></td></tr>
+        <tr>
+            <td>
+                <table border="0" cellpadding="0" cellspacing="0" width="90%" class="report-table">
+                    <tr>
+                        <td id="high-importance-header">
+                            <h2>High Importance</h2>
+                        </td>
+                    </tr>
+                    
+                {% if high_importance_reports|length > 0 %}
+                            
+                    {% for report in high_importance_reports %}
+                    <tr>
+                        <td>
+                            <a href="{{ report.link }}"><h3>{{ report.title }}</h3></a><br>
+                            <p>
+                                {{ report.contents }}
+                            </p>
+                            <hr>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                {% else %}
+                    <tr>
+                        <td>
+                            No reports of this level were found
+                        </td>
+                    </tr>
+                {% endif %}
+                    
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <table border="0" cellpadding="0" cellspacing="0" width="90%" class="report-table">
+                    <tr>
+                        <td id="medium-importance-header">
+                            <h2>Medium Importance</h2>
+                        </td>
+                    </tr>
+                    
+                {% if medium_importance_reports|length > 0 %}
+                    {% for report in medium_importance_reports %}
+                    <tr>
+                        <td>
+                            <a href="{{ report.link }}"><strong>{{ report.title }}</strong></a><br>
+                            <p>
+                                {{ report.contents }}
+                            </p>
+                            <hr>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>
+                            No reports of this level were found
+                        </td>
+                    </tr>
+                {% endif %}
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <table border="0" cellpadding="0" cellspacing="0" width="90%" class="report-table">
+                    <tr>
+                        <td id="low-importance-header" colspan="2">
+                            <h2>Other</h2>
+                        </td>
+                    </tr>
+                {% for report in low_importance_reports %}
+                    <tr>
+                    
+                        <td>
+                            <a href="{{ report.link }}"><strong>{{ report.title }}</strong></a>
+                        </td>
+                        <td>
+                                {{ report.contents }}
+                        </td>
+                    
+                    </tr>
+                {% endfor %}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

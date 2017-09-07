@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Login - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #login-button {
+                width: 100%;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        <div class="container">
+            <h1>VulnFeed</h1>
+            <div class="alert alert-danger" style="{{ 'display:none' if not server_error }}" role="alert">
+                {{ server_error }}
+            </div>
+            <form action="/login" method="post" novalidate id="login-form">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email address" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                </div>
+                <button type="submit" class="btn btn-success" id="signup-button">Login</button>
+            </form>
+        </div>
+    </body>
+</html>

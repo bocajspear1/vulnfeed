@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>Rule Builder - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #main {
+                margin-top: 90px;
+            }
+            textarea {
+                width: 100%;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            <form method="POST" action="/rule_builder">
+                <div class="row">
+                    <div class="col">
+                        <div class="alert alert-danger" style="{{ 'display:none' if not server_error }}" role="alert">
+                            {{ server_error }}
+                        </div>
+                        <div class="form-group">
+                            <label for="rule_name">Rule Name</label>
+                            <input class="form-control" id="rule_name" name="rule_name" type="text" placeholder="Type rule name here">
+                        </div>
+                        <div class="form-group">
+                            <label for="rule_string">Rule String</label>
+                            <input class="form-control" id="rule_string" name="rule_string" type="text" value="{{ rule_string }}" placeholder="Type rule text here">
+                        </div>
+                        <div class="form-group">
+                            <label for="rule_description">Rule Description</label>
+                            <input class="form-control" id="rule_description" name="rule_description" type="text" placeholder="Type rule description">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" name="test">Test</button>
+                        <button type="submit" class="btn btn-success" name="save">Save</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <textarea name="input_text">{{ input_text }}</textarea>
+                    </div>
+                    <div class="col">
+                        <textarea disabled>{{ output }}</textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <footer class="clearfix">
+            <div class="ink-grid">
+                <ul class="unstyled inline half-vertical-space">
+                    <li class="active"><a href="#">About</a></li>
+                    <li><a href="#">Sitemap</a></li>
+                    <li><a href="#">Contacts</a></li>
+                </ul>
+                <p class="note">Identification of the owner of the copyright, either by name, abbreviation, or other designation by which it is generally known.</p>
+            </div>
+        </footer>
+
+    </body>
+</html>
