@@ -1,5 +1,5 @@
 
-from normalize.normalizer import Normalizer
+from util.normalizer import Normalizer
 
 BINARY_OPERATORS = ("AND", "OR", "ANDOR")
 UNARY_OPERATORS = ("NOT")

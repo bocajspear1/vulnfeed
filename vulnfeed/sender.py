@@ -26,7 +26,6 @@ class SenderMaster():
         length = 50
         user_chunk = get_users(offset, length)
         while len(user_chunk) > 0:
-            print("main: ", user_chunk)
             
             worker_thread = SenderWorker(user_chunk)
             worker_thread.start()
@@ -126,7 +125,7 @@ class SenderWorker(threading.Thread):
         }
 
         m = emails.Message(html=JinjaTemplate(open(template_path).read()),  text="hi there",  subject="VulnFeed Test", mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
-        response = m.send(render=render_map, to=user_email, smtp={smtp_config)
+        response = m.send(render=render_map, to=user_email, smtp=smtp_config)
         print(response)
 
     def run(self):

@@ -12,7 +12,7 @@
                 width: 100%;
             }
         </style>
-
+        <script src='https://www.google.com/recaptcha/api.js'></script>
     </head>
     <body>
         <div class="container">
@@ -43,6 +43,9 @@
                     <label for="password2">Verify Password</label>
                     <input type="password" class="form-control" id="password2" name="password2" placeholder="Password">
                 </div>
+                {% if sitekey %}
+                <div class="g-recaptcha" data-sitekey="{{sitekey}}"></div>
+                {% endif %}
                 <button type="submit" class="btn btn-primary" id="signup-button">Sign Up!</button>
             </form>
 

@@ -1,19 +1,20 @@
+# Base class for all extractors
 
 import os
 import re
+
 class Normalizer():
 
     def __init__(self):
+        # Stores the entries from the source
         self.entries = []
-        
         common_words_file = open(os.path.dirname(__file__) + "/dictionaries/common-words").read()
-
         self.common_words = common_words_file.split("\n")
-        # print(self.common_words)
 
+    # Convert raw text into something a bit more parseable
     def normalize_text(self, data):
 
-        data =data.lower()
+        data = data.lower()
         # Normalize links
         data = re.sub("<[ ]*a[ ]*[^>]*href[ ]*=[ ]*['\"]([^'\"]*)['\"][ ]*>([^><]*)<[ ]*/[ ]*a[ ]*>", r"\1 \2", data)
         # Remove separaters
@@ -25,6 +26,7 @@ class Normalizer():
 
         return data
 
+    # Count out words, excluding common ones
     def get_word_frequency(self, data):
         return_map = {}
         space_split = re.split(r"[ \n\t]", data)
@@ -40,6 +42,7 @@ class Normalizer():
 
             to_add = [word]
 
+            # For - and _ seperated words, count both combined and seperate
             if "-" in word or "_" in word:
                 dash_split = re.split(r"[-_]", word)
                 for section in dash_split:
@@ -53,6 +56,5 @@ class Normalizer():
                     return_map[addition] += 1
 
         return return_map
-            
     
     

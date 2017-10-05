@@ -6,6 +6,7 @@ from flask import Flask, flash, redirect, render_template, request, session, abo
 import os
 import json
 import re
+import requests
 
 from database.user import User
 import database.rules as rules
@@ -18,6 +19,7 @@ conf = Config()
 
 app = Flask(__name__)
 
+# Home page
 @app.route('/')
 def home():
     if not session.get('logged_in'):
@@ -25,27 +27,39 @@ def home():
     else:
         return render_template('home.html')
 
+# Signup Page
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         if not re.match(r"[^@$<>;'\"]+@[^@$<>;'\"]+\.[^@$<>;'\"]+", request.form['email']):
-            return render_template('signup.html', server_error="Invalid email address")
+            return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Invalid email address")
         elif request.form['email'] != request.form['email2']:
-            return render_template('signup.html', server_error="Email addresses for not match!")
+            return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Email addresses do not match!")
         elif request.form['password'] != request.form['password2']:
-            return render_template('signup.html', server_error="Passwords do not match!")
+            return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Passwords do not match!")
         else:
             # Valid signup!
 
+            # Captcha
+            if conf.recaptcha_sitekey and conf.recaptcha_secret:
+                captcha_response = request.form['g-recaptcha-response']
+                captcha_verify = requests.post('https://www.google.com/recaptcha/api/siteverify', data = {'secret': conf.recaptcha_secret, 'response': captcha_response})
+                captcha_verify_json = json.loads(captcha_verify.text)
+
+                if captcha_verify_json['success'] is False:
+                    print(captcha_verify_json)
+                    return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Captcha failure")
+
+            # Insert new user
             result =  User.new_user(request.form['email'], request.form['password'])
             
             if result:
                 return redirect("/login", code=302)
             else:
-                return render_template('signup.html', server_error="Could not create account. Perhaps an account of that name already exists?")
+                return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Could not create account. Perhaps an account of that name already exists?")
         
     else:
-        return render_template('signup.html')
+        return render_template('signup.html', sitekey=conf.recaptcha_sitekey)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -101,7 +115,7 @@ def update_user_rules():
 @app.route('/user_config.json')
 def user_rules():
     if not session.get('logged_in'):
-        return jsonify()
+        return jsonify({"status": False})
 
     user = User(session['user_email'])
     resp = {}
@@ -112,8 +126,8 @@ def user_rules():
 
 @app.route('/rule_builder', methods=['GET', 'POST'])
 def rules_builder():
-    # if not session.get('logged_in'):
-    #     return "Nope"
+    if not session.get('logged_in'):
+        return redirect("/login", code=302)
 
     if request.method == 'POST':
         if request.form['input_text'] and request.form['rule_string'] and "test" in request.form:
@@ -137,6 +151,5 @@ def rules_builder():
         return render_template('rule_builder.html')  
 
 if __name__ == "__main__":
-    # app.secret_key = os.urandom(12)
     app.secret_key = conf.secret
-    app.run(host='0.0.0.0', port=4000, debug=True)
+    app.run(host='0.0.0.0', port=4000, debug=conf.debug)

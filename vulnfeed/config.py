@@ -14,6 +14,9 @@ class Config():
         self.smtp_pass = raw_config['smtp']['password']
         self.mongodb_string = raw_config['mongodb']
         self.secret = raw_config['secret']
+        self.debug = raw_config['debug']
+        self.recaptcha_secret = raw_config['recaptcha']['secret']
+        self.recaptcha_sitekey = raw_config['recaptcha']['sitekey']
         
 
 if __name__ == "__main__":

@@ -5,10 +5,9 @@ import requests
 import hashlib
 import re
 
-from .normalizer import Normalizer
+from .extractor import Extractor
 
-
-class RSSNormalizer(Normalizer):
+class RSSExtractor(Extractor):
     
     def __init__(self, name, url):
         super().__init__()
@@ -18,15 +17,12 @@ class RSSNormalizer(Normalizer):
     # Clean out namespaces
     def clean_tag(self, tag):
         return re.sub('{.*}', '', tag, count=1)
-
-
     
-    def get_data(self):
+    def get_rss_entries(self):
         result_list = []
         feed = requests.get(self.url)
 
         if feed.status_code == 200:
-
             rssstring = re.sub(' xmlns="[^"]+"', '', feed.text, count=1)
 
             feed_xml = ET.fromstring(rssstring)
@@ -36,29 +32,27 @@ class RSSNormalizer(Normalizer):
                     for elem in feed_xml[0]:
                         tag = self.clean_tag(elem.tag)
                         if tag == "item":
-                            self.parse_item(elem)
+                            result_list.append(self.parse_item(elem))
 
             for elem in feed_xml:
                 tag = self.clean_tag(elem.tag)
                 if tag == "item":
-                    self.parse_item(elem)
-
-            
+                    result_list.append(self.parse_item(elem))
         else:
-            print(feed.status_code) 
+            print(feed.status_code)
+            return []
 
-        return self.entries
-
-    def parse_entry(self, title, entry):
-        return title, entry
+        return result_list
 
     def parse_item(self, item):
 
-        feed_data = {
+        entry_data = {
             "report_id": "",
             "title": "",
+            "raw_title": "",
             "title_freq": "",
             "contents": "",
+            "raw_contents": "",
             "contents_freq": {},
             "link": "",
             "date": None
@@ -67,23 +61,21 @@ class RSSNormalizer(Normalizer):
         for child in item:
             tag = self.clean_tag(child.tag)
             if tag == "title":
-                feed_data['title'] = self.normalize_text(child.text)
-                feed_data['raw_title'] = child.text
+                entry_data['title'] = self.normalize_text(child.text)
+                entry_data['raw_title'] = child.text
             elif tag == "description":
-                feed_data['contents'] = self.normalize_text(child.text)
-                feed_data['raw_contents'] = child.text
+                entry_data['contents'] = self.normalize_text(child.text)
+                entry_data['raw_contents'] = child.text
             elif tag == "link":
-                feed_data['link'] = child.text
+                entry_data['link'] = child.text
             elif tag == "pubDate" or tag == "date":
-                feed_data['date'] = child.text
+                entry_data['date'] = child.text
 
-        feed_data['title'], feed_data['contents'] = self.parse_entry(feed_data['title'], feed_data['contents'])
+        
 
-        feed_data['title_freq'] = self.get_word_frequency(feed_data['title'])
-        feed_data['contents_freq'] = self.get_word_frequency(feed_data['contents'])
+        entry_data['title_freq'] = self.get_word_frequency(entry_data['title'])
+        entry_data['contents_freq'] = self.get_word_frequency(entry_data['contents'])
 
-        feed_data['report_id'] = hashlib.sha256((self.name + feed_data['title'] + feed_data['date'] + feed_data['link']).encode()).hexdigest()
+        entry_data['report_id'] = hashlib.sha256((self.name + entry_data['title'] + entry_data['date'] + entry_data['link']).encode()).hexdigest()
 
-        # print(feed_data['title'])
-        # print(feed_data['title_freq'])
-        self.entries.append(feed_data)
+        return entry_data
