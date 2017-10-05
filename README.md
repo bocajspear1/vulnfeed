@@ -2,7 +2,7 @@
 
 VulnFeed is a project born out of having so many vulnerabilities and so little time.
 
-The goal of this project is to have a service that sorts through vulnerabilty reports to give you a single report that is organized by the applications and services you are interested in. This brings the stuff you care about out of the massive pile of vulnerabilities that are reported each day.
+The goal of this project is to have a service that sorts through vulnerability reports to give you a single report that is organized by the applications and services you are interested in. This brings the stuff you care about out of the massive pile of vulnerabilities that are reported each day.
 
 No more filled email inboxes and no more slow perusings of massive vulnerability lists.
 
