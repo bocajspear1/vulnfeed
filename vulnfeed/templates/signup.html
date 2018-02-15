@@ -24,24 +24,30 @@
                     <label for="email">Email address</label>
                     <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email address" name="email" required>
                     <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
-                    <div class="invalid-feedback">
-                        Invalid email address
+                    <div class="invalid-feedback" id="email1-error">
+                        
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="email2">Verify Email address</label>
                     <input type="email" class="form-control" id="email2" aria-describedby="emailHelp" placeholder="Verify email address" name="email2" required>
                     <div class="invalid-feedback" id="email2-error">
-                        Invalid email address
+                        
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                    <div class="invalid-feedback" id="password1-error">
+                        
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="password2">Verify Password</label>
                     <input type="password" class="form-control" id="password2" name="password2" placeholder="Password">
+                    <div class="invalid-feedback" id="password2-error">
+                        
+                    </div>
                 </div>
                 {% if sitekey %}
                 <div class="g-recaptcha" data-sitekey="{{sitekey}}"></div>
@@ -53,11 +59,12 @@
         <script>
             $("#signup-button").click(function(e) {
                 var valid = true;
-                $("#email").removeClass(":invalid");
-                $("#email2").removeClass(":invalid");
+                $("input").removeClass(":invalid");
+                $(".invalid-feedback").text("");
+
                 // Validate emails
                 if (!$("#email").val().match(/^\S+@\S+$/)) {
-                    
+                    $("#email1-error").text("Invalid email address");
                     $("#email").addClass(":invalid");
                     valid = false;
                 }
@@ -71,10 +78,33 @@
                     $("#email2").addClass(":invalid");
                     valid = false;
                 }
-                $("#signup-form").addClass("was-validated");
+
+                if ($("#password").val()=="") {
+                    $("#password1-error").text("You must enter a password");
+                    $("#password").addClass(":invalid");
+                    valid = false;
+                }
+                if ($("#password2").val()=="") {
+                    $("#password2-error").text("You must enter a password");
+                    $("#password2").addClass(":invalid");
+                    valid = false;
+                }
+
+                if ($("#password").val()!=$("#password2").val()) {
+                    $("#email2-error").text("Passwords do not match");
+                    $("#password").addClass(":invalid");
+                    $("#password2").addClass(":invalid");
+                    valid = false;
+                }
+                
                 if (!valid) {
+                    $("#signup-form").addClass("was-validated");
                     e.preventDefault();
                     e.stopPropagation();
+                    console.log("Nope");
+                    return false;
+                } else {
+                    console.log("Okay");
                 }
             });
         </script>

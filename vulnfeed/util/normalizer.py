@@ -1,4 +1,4 @@
-# Base class for all extractors
+# A normalizer is used to parse text from vulnerability feeds into something useful
 
 import os
 import re

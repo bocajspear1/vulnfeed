@@ -16,6 +16,7 @@ from config import Config
 
 CONFIG = Config()
 
+# Sender master breaks users off into groups of 50 to be proccessed on different threads
 class SenderMaster():
     def __init__(self):
         self.threads = []
@@ -37,6 +38,7 @@ class SenderMaster():
         for thread in self.threads:
             thread.join()
 
+# Works on a chunk of users
 class SenderWorker(threading.Thread):   
     def __init__(self, user_chunk):
         threading.Thread.__init__(self)
@@ -79,7 +81,7 @@ class SenderWorker(threading.Thread):
             if last_day > current_day:
                 current_day += 7
             day_diff = current_day - last_day
-        
+
         
         # Get reports between the time requested plus some buffer time
         query_time = current_time - timedelta(hours=(day_diff*24)+4)
@@ -94,42 +96,49 @@ class SenderWorker(threading.Thread):
             self.check_report(report_map, report, filled_rules)
 
 
-        high_reports = []
-        medium_reports = []
-        low_reports = []
-        report_count = 0
+        
 
-        for report_id in report_map:
-            score = report_map[report_id]['score']
-            report = report_map[report_id]['report']
-            report_count += 1
-            if score == 0:
-                low_reports.append(report)
-            else:
-                high_reports.append(report)
+        sorted_reports = sorted(report_map, key=lambda item: report_map[item]['score'], reverse=True)
 
-        render_map = {
-            "vulncount": report_count,
-            "high_importance_reports": high_reports,
-            "medium_importance_reports": medium_reports,
-            "low_importance_reports": low_reports
-        }
-        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", 'email_template.html')
+        for item in sorted_reports:
+            print(report_map[item]['score'])
+            print(report_map[item]['report']['title'])
 
-        smtp_config = {
-            'host': CONFIG.smtp_host,
-            'port': CONFIG.smtp_port,
-            'user': CONFIG.smtp_user,
-            'password': CONFIG.smtp_pass,
-            'ssl': True
-        }
+        # high_reports = []
+        # medium_reports = []
+        # low_reports = []
+        # report_count = 0
 
-        m = emails.Message(html=JinjaTemplate(open(template_path).read()),  text="hi there",  subject="VulnFeed Test", mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
-        response = m.send(render=render_map, to=user_email, smtp=smtp_config)
-        print(response)
+        # for report_id in report_map:
+        #     score = report_map[report_id]['score']
+        #     report = report_map[report_id]['report']
+        #     report_count += 1
+        #     if score == 0:
+        #         low_reports.append(report)
+        #     else:
+        #         high_reports.append(report)
 
+        # render_map = {
+        #     "vulncount": report_count,
+        #     "scored_reports": high_reports,
+        #     "unscored_reports": medium_reports
+        # }
+        # template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", 'email_template.html')
+
+        # smtp_config = {
+        #     'host': CONFIG.smtp_host,
+        #     'port': CONFIG.smtp_port,
+        #     'user': CONFIG.smtp_user,
+        #     'password': CONFIG.smtp_pass,
+        #     'ssl': True
+        # }
+
+        # m = emails.Message(html=JinjaTemplate(open(template_path).read()),  text="hi there",  subject="VulnFeed Test", mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
+        # response = m.send(render=render_map, to=user_email, smtp=smtp_config)
+        # print(response)
+
+    # Process each user
     def run(self):
-
         for user_email in self.user_chunk:
             self.process_user(user_email)
 

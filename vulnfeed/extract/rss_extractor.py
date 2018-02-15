@@ -23,6 +23,7 @@ class RSSExtractor(Extractor):
         feed = requests.get(self.url)
 
         if feed.status_code == 200:
+            # Remove any namespaces
             rssstring = re.sub(' xmlns="[^"]+"', '', feed.text, count=1)
 
             feed_xml = ET.fromstring(rssstring)
@@ -61,10 +62,10 @@ class RSSExtractor(Extractor):
         for child in item:
             tag = self.clean_tag(child.tag)
             if tag == "title":
-                entry_data['title'] = self.normalize_text(child.text)
+                entry_data['title'] = self.normalizer.normalize_text(child.text)
                 entry_data['raw_title'] = child.text
             elif tag == "description":
-                entry_data['contents'] = self.normalize_text(child.text)
+                entry_data['contents'] = self.normalizer.normalize_text(child.text)
                 entry_data['raw_contents'] = child.text
             elif tag == "link":
                 entry_data['link'] = child.text
@@ -73,8 +74,8 @@ class RSSExtractor(Extractor):
 
         
 
-        entry_data['title_freq'] = self.get_word_frequency(entry_data['title'])
-        entry_data['contents_freq'] = self.get_word_frequency(entry_data['contents'])
+        entry_data['title_freq'] = self.normalizer.get_word_frequency(entry_data['title'])
+        entry_data['contents_freq'] = self.normalizer.get_word_frequency(entry_data['contents'])
 
         entry_data['report_id'] = hashlib.sha256((self.name + entry_data['title'] + entry_data['date'] + entry_data['link']).encode()).hexdigest()
 

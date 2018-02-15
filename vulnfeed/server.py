@@ -18,6 +18,7 @@ from config import Config
 conf = Config()
 
 app = Flask(__name__)
+app.secret_key = conf.secret
 
 # Home page
 @app.route('/')
@@ -61,6 +62,7 @@ def signup():
     else:
         return render_template('signup.html', sitekey=conf.recaptcha_sitekey)
 
+# Login page
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -79,6 +81,7 @@ def login():
     else:
         return render_template('login.html')
 
+# Logout page
 @app.route('/logout')
 def logout():
     if session.get('logged_in'):
@@ -124,13 +127,14 @@ def user_rules():
 
     return jsonify(resp)
 
+# Rule builder page
 @app.route('/rule_builder', methods=['GET', 'POST'])
 def rules_builder():
     if not session.get('logged_in'):
         return redirect("/login", code=302)
 
     if request.method == 'POST':
-        if request.form['input_text'] and request.form['rule_string'] and "test" in request.form:
+        if request.form['rule_string'] and "test" in request.form:
             parser = VulnFeedRuleParser()
             error = ""
             output = ""
@@ -142,7 +146,7 @@ def rules_builder():
                 error = str(e)
 
             return render_template('rule_builder.html', output=score, error=error, rule_string=request.form['rule_string'], input_text=request.form['input_text'])
-        elif request.form['input_text'] and request.form['rule_string'] and "save" in request.form:
+        elif request.form['rule_name'] and request.form['rule_string'] and "save" in request.form:
             new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'])
             return render_template('rule_builder.html')
         else:
@@ -151,5 +155,4 @@ def rules_builder():
         return render_template('rule_builder.html')  
 
 if __name__ == "__main__":
-    app.secret_key = conf.secret
     app.run(host='0.0.0.0', port=4000, debug=conf.debug)

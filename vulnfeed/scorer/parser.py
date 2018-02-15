@@ -1,3 +1,4 @@
+# This parses the rule language
 
 from util.normalizer import Normalizer
 

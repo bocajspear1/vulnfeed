@@ -3,7 +3,7 @@
 import os
 import re
 from abc import ABCMeta, abstractmethod
-from vulnfeed.util.normalizer import Normalizer
+from util.normalizer import Normalizer
 
 class Extractor(metaclass=ABCMeta):
 

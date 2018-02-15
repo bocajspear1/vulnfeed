@@ -28,14 +28,13 @@ class Rule():
 
     @classmethod
     def new_rule(cls, name, rule_string, description):
+        print("New Rule")
         rules_coll = Client.rules
-        try:
-            result = rules_coll.insert_one({
-                "name": name,
-                "rule":  rule_string,
-                "description": description
-            })
-            return cls(result.inserted_id)
-        except mongo_errors.DuplicateKeyError:
-            print("Dup key!")
-            return None
+        
+        result = rules_coll.insert_one({
+            "name": name,
+            "rule":  rule_string,
+            "description": description
+        })
+        return cls(result.inserted_id)
+        
