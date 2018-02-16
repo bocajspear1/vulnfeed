@@ -104,7 +104,7 @@ class VulnFeedRuleParser():
             self.depth -= 1
             return result, result_strings
         else:
-            print(item)
+            # print(item)
             print(("  " * self.depth) + "Checking " + item['string'] + "...")
             # print(text_freq)
             if item['string'] in text_freq:
@@ -128,7 +128,7 @@ class VulnFeedRuleParser():
         if op in BINARY_OPERATORS:
             left,left_strings = self._process_item(tree[1], text, text_freq)
             right,right_strings = self._process_item(tree[2], text, text_freq)
-            print(left, left_strings, right, right_strings)
+            # print(left, left_strings, right, right_strings)
             if op == "AND":
                 multi = 1
                 return_strings = left_strings + right_strings

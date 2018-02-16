@@ -9,13 +9,10 @@
         #header {
             text-align: center;
         }
-        #high-importance-header {
+        #scored-header {
             background-color: #FFD7BD;
         }
-        #medium-importance-header {
-            background-color: #FFEEBD;
-        }
-        #low-importance-header {
+        #unscored-header {
             background-color: #D6D6D6;
         }
         .report-table {
@@ -23,7 +20,10 @@
             margin-right:auto;
         }
         .report-table tr td {
-            padding: 15px;
+            padding: 10px;
+        }
+        h3 {
+            margin: 0px;
         }
     </style>
 </head>
@@ -35,14 +35,14 @@
             <td>
                 <table border="0" cellpadding="0" cellspacing="0" width="90%" class="report-table">
                     <tr>
-                        <td id="high-importance-header">
-                            <h2>High Importance</h2>
+                        <td id="scored-header">
+                            <h2>Scored Reports</h2>
                         </td>
                     </tr>
                     
-                {% if high_importance_reports|length > 0 %}
+                {% if scored_reports|length > 0 %}
                             
-                    {% for report in high_importance_reports %}
+                    {% for report in scored_reports %}
                     <tr>
                         <td>
                             <a href="{{ report.link }}"><h3>{{ report.title }}</h3></a><br>
@@ -57,7 +57,7 @@
                 {% else %}
                     <tr>
                         <td>
-                            No reports of this level were found
+                            No scored reports were found
                         </td>
                     </tr>
                 {% endif %}
@@ -69,49 +69,18 @@
             <td>
                 <table border="0" cellpadding="0" cellspacing="0" width="90%" class="report-table">
                     <tr>
-                        <td id="medium-importance-header">
-                            <h2>Medium Importance</h2>
+                        <td id="unscored-header" colspan="2">
+                            <h2>Unscored</h2>
                         </td>
                     </tr>
-                    
-                {% if medium_importance_reports|length > 0 %}
-                    {% for report in medium_importance_reports %}
-                    <tr>
-                        <td>
-                            <a href="{{ report.link }}"><strong>{{ report.title }}</strong></a><br>
-                            <p>
-                                {{ report.contents }}
-                            </p>
-                            <hr>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td>
-                            No reports of this level were found
-                        </td>
-                    </tr>
-                {% endif %}
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <table border="0" cellpadding="0" cellspacing="0" width="90%" class="report-table">
-                    <tr>
-                        <td id="low-importance-header" colspan="2">
-                            <h2>Other</h2>
-                        </td>
-                    </tr>
-                {% for report in low_importance_reports %}
+                {% for report in unscored_reports %}
                     <tr>
                     
                         <td>
                             <a href="{{ report.link }}"><strong>{{ report.title }}</strong></a>
                         </td>
                         <td>
-                                {{ report.contents }}
+                                {{ report.contents|truncate(300) }}
                         </td>
                     
                     </tr>

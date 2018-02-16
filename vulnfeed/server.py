@@ -11,7 +11,10 @@ import requests
 from database.user import User
 import database.rules as rules
 from database.rules import Rule
+from database.setup import setup_database
 from scorer.parser import VulnFeedRuleParser
+
+from database.security import address_failed_login, clear_failed_login
 
 from config import Config
 
@@ -19,6 +22,8 @@ conf = Config()
 
 app = Flask(__name__)
 app.secret_key = conf.secret
+
+setup_database()
 
 # Home page
 @app.route('/')
@@ -65,12 +70,17 @@ def signup():
 # Login page
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
+    if address_failed_login(request.remote_addr):
+        return render_template('login.html', server_error="You have exceeded the number of fail logins. Try again later")
+
     if request.method == 'POST':
         message = ""
         user = User(request.form['email'])
         if user.login(request.form['password']):
             session['logged_in'] = True
             session['user_email'] = request.form['email']
+            clear_failed_login(request.remote_addr)
             return redirect("/", code=302)
         else:
             session['logged_in'] = False

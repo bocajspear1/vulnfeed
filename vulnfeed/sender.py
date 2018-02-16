@@ -3,6 +3,8 @@
 import os
 import threading
 from datetime import datetime, timedelta
+import re
+import time
 
 import emails
 from emails.template import JinjaTemplate 
@@ -52,7 +54,8 @@ class SenderWorker(threading.Thread):
 
             title_score, _ = parser.process_text(report['title'], report['title_freq'])
             print(title_score)
-            contents_score, _ = parser.process_text(report['contents'], report['contents_freq'])
+            contents_score, words = parser.process_text(report['contents'], report['contents_freq'])
+            print(words)
             print("Score: ", contents_score)
 
             small_report = {
@@ -68,7 +71,18 @@ class SenderWorker(threading.Thread):
                 }
             
             report_map[report['id']]['score'] += contents_score + (title_score * 2)
-
+            if contents_score > 0:
+                for word in words:
+                    # Check if contains HTML
+                    if "<" in report_map[report['id']]['report']['contents']:
+                        boldify = re.compile('([>][^<]+)(' + word + ')', re.IGNORECASE)
+                        report_map[report['id']]['report']['contents'] = boldify.sub(r"\1<strong>\2</strong>", 
+                                                    report_map[report['id']]['report']['contents'])
+                    else:
+                        boldify = re.compile('(' + word + ')', re.IGNORECASE)
+                        report_map[report['id']]['report']['contents'] = boldify.sub(r"<strong>\1</strong>", 
+                                                    report_map[report['id']]['report']['contents'])
+                    print(report_map[report['id']]['report']['contents'])
     def process_user(self, user_email):
         # Get object
         u = User(user_email)
@@ -76,6 +90,10 @@ class SenderWorker(threading.Thread):
         last_day = u.last_run
         current_time = datetime.utcnow()
         current_day = int(current_time.strftime("%w")) + 1
+
+        if current_day not in days_to_run:
+            return
+
         day_diff = 2
         if last_day > 0:
             if last_day > current_day:
@@ -96,46 +114,43 @@ class SenderWorker(threading.Thread):
             self.check_report(report_map, report, filled_rules)
 
 
-        
-
         sorted_reports = sorted(report_map, key=lambda item: report_map[item]['score'], reverse=True)
+
+
+        scored_reports = []
+        unscored_reports = []
+
+        for item in sorted_reports:
+            if report_map[item]['score'] > 0:
+                scored_reports.append(report_map[item]['report'])
+            else:
+                unscored_reports.append(report_map[item]['report'])
+
 
         for item in sorted_reports:
             print(report_map[item]['score'])
-            print(report_map[item]['report']['title'])
+            print(report_map[item]['report']['contents'])
 
-        # high_reports = []
-        # medium_reports = []
-        # low_reports = []
-        # report_count = 0
+        report_count = len(sorted_reports)
+       
+        render_map = {
+            "vulncount": report_count,
+            "scored_reports": scored_reports,
+            "unscored_reports": unscored_reports
+        }
+        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", 'email_template.html')
 
-        # for report_id in report_map:
-        #     score = report_map[report_id]['score']
-        #     report = report_map[report_id]['report']
-        #     report_count += 1
-        #     if score == 0:
-        #         low_reports.append(report)
-        #     else:
-        #         high_reports.append(report)
+        smtp_config = {
+            'host': CONFIG.smtp_host,
+            'port': CONFIG.smtp_port,
+            'user': CONFIG.smtp_user,
+            'password': CONFIG.smtp_pass,
+            'ssl': True
+        }
 
-        # render_map = {
-        #     "vulncount": report_count,
-        #     "scored_reports": high_reports,
-        #     "unscored_reports": medium_reports
-        # }
-        # template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", 'email_template.html')
-
-        # smtp_config = {
-        #     'host': CONFIG.smtp_host,
-        #     'port': CONFIG.smtp_port,
-        #     'user': CONFIG.smtp_user,
-        #     'password': CONFIG.smtp_pass,
-        #     'ssl': True
-        # }
-
-        # m = emails.Message(html=JinjaTemplate(open(template_path).read()),  text="hi there",  subject="VulnFeed Test", mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
-        # response = m.send(render=render_map, to=user_email, smtp=smtp_config)
-        # print(response)
+        m = emails.Message(html=JinjaTemplate(open(template_path).read()), subject="VulnFeed Report for " + time.strftime("%m/%d/%Y"), mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
+        response = m.send(render=render_map, to=user_email, smtp=smtp_config)
+        print(response)
 
     # Process each user
     def run(self):
