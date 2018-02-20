@@ -56,7 +56,8 @@ class User:
     def update(self):
         new_data = {
             "rules": self.rules,
-            "days": self.days
+            "days": self.days,
+            "last_run": self.last_run
         }
         Client.users.update({"email": self.email}, {"$set": new_data}, multi=False, upsert=False)
 

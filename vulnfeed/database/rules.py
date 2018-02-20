@@ -11,6 +11,7 @@ def get_rules():
     return rules
 
 def fill_rules(rule_list):
+    
     new_list = []
     for i in range(len(rule_list)):
         rule_id = rule_list[i]['id']
@@ -19,6 +20,7 @@ def fill_rules(rule_list):
         new_item = rule_list[i].copy()
         new_item.update(rule)
         new_list.append(new_item)
+        print("New Rule: ", new_item)
 
     return new_list
 
