@@ -1,0 +1,9 @@
+footer {
+    width: 100%;
+    text-align: center;
+}
+
+footer a {
+    display: inline-block;
+    padding: 15px;
+}

@@ -144,10 +144,12 @@ def rules_builder():
         return redirect("/login", code=302)
 
     if request.method == 'POST':
+        # Check for test
         if request.form['rule_string'] and "test" in request.form:
             parser = VulnFeedRuleParser()
             error = ""
             output = ""
+            score = -1
             try:
                 parser.parse_rule(request.form['rule_string'])
                 score, _ = parser.process_raw_text(request.form['input_text'])
@@ -155,7 +157,14 @@ def rules_builder():
                 print("error!")
                 error = str(e)
 
-            return render_template('rule_builder.html', output=score, error=error, rule_string=request.form['rule_string'], input_text=request.form['input_text'])
+            return render_template('rule_builder.html', 
+                                   output=score, 
+                                   error=error, 
+                                   rule_string=request.form['rule_string'], 
+                                   rule_name=request.form['rule_name'],
+                                   rule_description=request.form['rule_description'],
+                                   input_text=request.form['input_text']
+                                  )
         elif request.form['rule_name'] and request.form['rule_string'] and "save" in request.form:
             new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'])
             return render_template('rule_builder.html')
