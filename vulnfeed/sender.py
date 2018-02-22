@@ -162,8 +162,8 @@ class SenderWorker(threading.Thread):
         }
 
         m = emails.Message(html=JinjaTemplate(open(template_path).read()), subject="VulnFeed Report for " + time.strftime("%m/%d/%Y"), mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
-        # response = m.send(render=render_map, to=user_email, smtp=smtp_config)
-        # print(response)
+        response = m.send(render=render_map, to=user_email, smtp=smtp_config)
+        print(response)
 
         # Update the users last sent day
         print(current_day)

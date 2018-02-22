@@ -4,3 +4,4 @@ emails
 requests
 defusedxml
 pymongo
+dateparser
