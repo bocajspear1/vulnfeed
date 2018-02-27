@@ -17,6 +17,7 @@ class Config():
         self.debug = raw_config['debug']
         self.recaptcha_secret = raw_config['recaptcha']['secret']
         self.recaptcha_sitekey = raw_config['recaptcha']['sitekey']
+        self.admin_email = raw_config['admin_email']
         
 
 if __name__ == "__main__":
