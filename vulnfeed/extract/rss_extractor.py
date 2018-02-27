@@ -50,6 +50,7 @@ class RSSExtractor(Extractor):
         entry_data = {
             "report_id": "",
             "title": "",
+            "source": self.name,
             "raw_title": "",
             "title_freq": "",
             "contents": "",

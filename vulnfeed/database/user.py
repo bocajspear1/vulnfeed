@@ -28,7 +28,6 @@ class User:
         self.last_run = 0
 
         if doc:
-            print("Doc: ", doc)
             self.rules = doc['rules']
             self.hash = doc['password']
             self.days = doc['days']
@@ -44,7 +43,6 @@ class User:
         self.days = new_days
             
     def set_rules(self, new_rules):
-        print(new_rules)
         valid_list = []
         for rule in new_rules:
             if re.match(r"^[0-9a-zA-Z]+$", rule['id']):
@@ -62,7 +60,6 @@ class User:
         Client.users.update({"email": self.email}, {"$set": new_data}, multi=False, upsert=False)
 
     def get_rules(self):
-        print("Rules: ", self.rules)
         return self.rules
 
     def get_days(self):

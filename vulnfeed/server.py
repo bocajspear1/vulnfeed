@@ -7,10 +7,12 @@ import os
 import json
 import re
 import requests
+from datetime import date, datetime
 
 from database.user import User
 import database.rules as rules
 from database.rules import Rule
+import database.reports
 from database.setup import setup_database
 from scorer.parser import VulnFeedRuleParser
 
@@ -90,6 +92,27 @@ def login():
         return render_template('login.html', server_error=message)
     else:
         return render_template('login.html')
+
+# Login page
+@app.route('/report_viewer', methods=['GET'])
+def report_viewer():
+    if not session.get('logged_in'):
+        return redirect("/login", code=302)
+
+    day = request.args.get('day')
+    date_obj = None
+
+    
+    if not day:
+        date_obj = datetime.combine(date.today(), datetime.min.time())
+    else:
+        try:
+            date_obj = datetime.strptime(day, '%Y-%m-%d').date()
+        except:
+            return render_template('report_view.html', server_error="Invalid date")
+         
+    reports = database.reports.get_reports(date_obj)
+    return render_template('report_view.html', days_reports=reports)
 
 # Logout page
 @app.route('/logout')

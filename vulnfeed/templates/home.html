@@ -31,6 +31,23 @@
                 background-color: white;
                 padding: 7px;
             }
+
+            #days-select {
+                text-align: center;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            #days-title {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                font-size: 1.2em;
+            }
+
+            .row {
+                margin-bottom: 10px;
+            }
         </style>
     </head>
     <body>
@@ -42,53 +59,59 @@
                     <button id="update-button" class="btn btn-success btn-block">Update</button>
                 </div>
             </div>
-            <div class="row" id="days-select">
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="sundayCheckbox" value="1"> Sunday
-                    </label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="mondayCheckbox" value="2"> Monday
-                    </label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="tuesdayCheckbox" value="3"> Tuesday
-                    </label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="Checkbox" value="4"> Wednesday
-                    </label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="Checkbox" value="5"> Thursday
-                    </label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="Checkbox" value="6"> Friday
-                    </label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <label class="form-check-label">
-                        <input class="form-check-input" type="checkbox" id="Checkbox" value="7"> Saturday
-                    </label>
+            <div class="row">
+                <div id="days-select">
+                    <div id="days-title">Send on days:</div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="sundayCheckbox" value="1"> Sunday
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="mondayCheckbox" value="2"> Monday
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="tuesdayCheckbox" value="3"> Tuesday
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="Checkbox" value="4"> Wednesday
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="Checkbox" value="5"> Thursday
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="Checkbox" value="6"> Friday
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="Checkbox" value="7"> Saturday
+                        </label>
+                    </div>
                 </div>
             </div>
+            
            
             <div class="row">
                 <div class="col">
-                    <h2>Added Rules</h2>
+                    <h2>My Rules</h2>
+                    <p>Drag rules from the right to add them to your list.</p>
                     <ul id="added_rules_list" class="rulesSort">
 
                     </ul>
                 </div>
                 <div class="col">
                     <h2>Available Rules</h2>
+                    <p>Use the <a href="/rule_builder">Rule Builder</a> to add new rules</p>
                     <ul id="all_rules_list" class="rulesSort">
                             
                     </ul>

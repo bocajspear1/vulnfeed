@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>Report Viewer - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #main {
+                margin-top: 90px;
+            }
+            textarea {
+                width: 100%;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            <div class="alert alert-danger" style="{{ 'display:none' if not server_error }}" role="alert">
+                {{ server_error }}
+            </div>
+             
+            <p>Date: <input type="text" id="datepicker"> <button id="select-date-button">Select Date</button></p>
+
+            <table border="0" cellpadding="0" cellspacing="0" width="90%" class="table">
+
+                {% if days_reports|length > 0 %}
+                    <tr>
+                        <td colspan="2">
+                            {{ days_reports|length }} were parsed on this day.
+                        </td>
+                    </tr>        
+                    <tr>
+                        <th>Source</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                    </tr>
+                    {% for report in days_reports %}
+                    
+                    <tr>
+                        <td>
+                            {{ report.source }}
+                        </td>
+                        <td>
+                            <a href="{{ report.link }}"><strong>{{ report.title|e }}</strong></a>
+                        </td>
+                        <td>
+                            {{ report.contents|truncate(300) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                {% else %}
+                    <tr>
+                        <td>
+                            No reports were found for this day.
+                        </td>
+                    </tr>
+                {% endif %}
+                    
+                </table>
+
+                
+            </table>
+        </div>
+
+        {% include 'footer.html' %}
+
+        <script>
+            $(function() {
+                $("#datepicker").datepicker();
+                $("#select-date-button").click(function(){
+                    console.log("hi");
+                    var new_date = $("#datepicker").datepicker( "getDate" );
+
+                    if (new_date !== null) {
+                        new_date_string = new_date.toISOString().slice(0, 10);
+                        console.log(new_date_string);
+                        window.location = "/report_viewer?day=" + new_date_string;
+                    }
+                    
+                });
+            } );
+        </script>
+    </body>
+</html>
