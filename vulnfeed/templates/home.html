@@ -161,7 +161,10 @@
                     type: "POST",
                     data: JSON.stringify(new_config),
                     contentType: "application/json; charset=utf-8",
-                    success: function(result) { console.log(result); }
+                    success: function(result) { 
+                        console.log(result); 
+                        alert("Your selections have been updated");
+                    }
                 });
             });
 

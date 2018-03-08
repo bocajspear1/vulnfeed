@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Forgot Password - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #login-button {
+                width: 100%;
+            }
+        </style>
+        <script src='https://www.google.com/recaptcha/api.js'></script>
+    </head>
+    <body>
+        <div class="container">
+            <div class="alert alert-danger" style="{{ 'display:none' if not server_error }}" role="alert">
+                {{ server_error }}
+            </div>
+            <div class="alert alert-success" style="{{ 'display:none' if not success_message }}" role="alert">
+                {{ success_message }}
+            </div>
+            <form action="/forgot" method="post" novalidate id="signup-form">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email address" name="email" required>
+                    <div class="invalid-feedback" id="email1-error">
+                        
+                    </div>
+                </div>
+                {% if sitekey %}
+                <div class="g-recaptcha" data-sitekey="{{sitekey}}"></div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary" id="submit-button">Submit</button>
+            </form>
+
+        </div>
+        <script>
+            $("#submit-button").click(function(e) {
+                var valid = true;
+                $("input").removeClass(":invalid");
+                $(".invalid-feedback").text("");
+
+                // Validate emails
+                if (!$("#email").val().match(/^\S+@\S+$/)) {
+                    $("#email1-error").text("Invalid email address");
+                    $("#email").addClass(":invalid");
+                    valid = false;
+                }
+                
+                if (!valid) {
+                    $("#signup-form").addClass("was-validated");
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Nope");
+                    return false;
+                } else {
+                    console.log("Okay");
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -2,10 +2,11 @@
 from bson.objectid import ObjectId
 import pymongo.errors as mongo_errors
 import re
-import datetime
+from datetime import datetime, date
 
 from database import Client
 from passlib.hash import pbkdf2_sha256
+from passlib import pwd
 
 def get_users(start=0, limit=50):
     user_chunk = []
@@ -26,12 +27,17 @@ class User:
         self.rules = []
         self.days = []
         self.last_run = 0
+        self.verify_token = ""
+        self.verify_salt = ""
+        self._confirmed = False
 
         if doc:
             self.rules = doc['rules']
             self.hash = doc['password']
             self.days = doc['days']
             self.last_run = doc['last_run']
+            self.verify_token = doc.get("verify_token", "")
+            self._confirmed = doc.get("confirmed", True)
 
     def set_days(self, new_days):
         if not isinstance(new_days, list):
@@ -49,13 +55,21 @@ class User:
                 valid_list.append(rule)
         
         self.rules = valid_list
-        
   
+    def set_confirmed(self):
+        self._confirmed = True
+
+    def is_confirmed(self):
+        return self._confirmed
+
     def update(self):
         new_data = {
             "rules": self.rules,
             "days": self.days,
-            "last_run": self.last_run
+            "last_run": self.last_run,
+            "verify_token": self.verify_token,
+            "confirmed": self._confirmed,
+            "password": self.hash
         }
         Client.users.update({"email": self.email}, {"$set": new_data}, multi=False, upsert=False)
 
@@ -71,16 +85,22 @@ class User:
     
         return pbkdf2_sha256.verify(password, self.hash)
 
+    def new_password(self, password):
+        self.hash = pbkdf2_sha256.hash(password)
+
     @classmethod
     def new_user(cls, email, password):
         user_coll = Client.users
+        current_time = datetime.combine(date.today(), datetime.min.time())
         try:
             user_coll.insert_one({
                 "email": email,
                 "password":  pbkdf2_sha256.hash(password),
                 "rules": [],
-                "last_run": 0,
-                "days": [6]
+                "last_run": int(current_time.strftime("%j")),
+                "days": [6],
+                "confirmed": False,
+                "verify_token": ""
             })
         except mongo_errors.DuplicateKeyError:
             print("Dup key!")

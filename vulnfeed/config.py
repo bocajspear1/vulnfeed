@@ -18,6 +18,8 @@ class Config():
         self.recaptcha_secret = raw_config['recaptcha']['secret']
         self.recaptcha_sitekey = raw_config['recaptcha']['sitekey']
         self.admin_email = raw_config['admin_email']
+        self.domain = raw_config['domain']
+        self.email_salt = raw_config['email_salt']
         
 
 if __name__ == "__main__":

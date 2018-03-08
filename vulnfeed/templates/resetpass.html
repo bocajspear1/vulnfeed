@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Reset Password - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #login-button {
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="alert alert-danger" style="{{ 'display:none' if not server_error }}" role="alert">
+                {{ server_error }}
+            </div>
+            <p>
+                Enter your new password. When completed succesfully, you will be be redirected to the login page.
+            </p>
+            <form action="/resetpass/{{ user_token }}" method="post" novalidate id="signup-form">
+                <div class="form-group">
+                    <label for="password">New Password</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                    <div class="invalid-feedback" id="password1-error">
+                        
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password2">Verify New Password</label>
+                    <input type="password" class="form-control" id="password2" name="password2" placeholder="Password">
+                    <div class="invalid-feedback" id="password2-error">
+                        
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="signup-button">Reset Password</button>
+            </form>
+
+        </div>
+        <script>
+            $("#signup-button").click(function(e) {
+                var valid = true;
+                $("input").removeClass(":invalid");
+                $(".invalid-feedback").text("");
+
+                if ($("#password").val()=="") {
+                    $("#password1-error").text("You must enter a password");
+                    $("#password").addClass(":invalid");
+                    valid = false;
+                }
+                if ($("#password2").val()=="") {
+                    $("#password2-error").text("You must enter a password");
+                    $("#password2").addClass(":invalid");
+                    valid = false;
+                }
+
+                if ($("#password").val()!=$("#password2").val()) {
+                    $("#email2-error").text("Passwords do not match");
+                    $("#password").addClass(":invalid");
+                    $("#password2").addClass(":invalid");
+                    valid = false;
+                }
+                
+                if (!valid) {
+                    $("#signup-form").addClass("was-validated");
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Nope");
+                    return false;
+                } else {
+                    console.log("Okay");
+                }
+            });
+        </script>
+    </body>
+</html>

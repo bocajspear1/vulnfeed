@@ -12,6 +12,6 @@ def get_reports(day):
     print(end)
     cursor = Client.vulnreports.find({"date": {"$gte": start, "$lt": end}})
     for report in cursor:
-        reports.append({"title": report['raw_title'], "contents": report['contents'], "link": report['link'], "source": report.get('source', "?")})
+        reports.append({"title": report['raw_title'], "contents": report['raw_contents'], "link": report['link'], "source": report.get('source', "?")})
     print(len(reports))
     return reports

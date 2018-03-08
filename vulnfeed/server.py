@@ -8,6 +8,7 @@ import json
 import re
 import requests
 from datetime import date, datetime
+from itsdangerous import URLSafeTimedSerializer
 
 from database.user import User
 import database.rules as rules
@@ -16,7 +17,10 @@ import database.reports
 from database.setup import setup_database
 from scorer.parser import VulnFeedRuleParser
 
+from util.email_sender import send_email
+
 from database.security import address_failed_login, clear_failed_login
+
 
 from config import Config
 
@@ -25,6 +29,7 @@ conf = Config()
 app = Flask(__name__)
 app.secret_key = conf.secret
 
+timed_serializer = URLSafeTimedSerializer(conf.secret)
 setup_database()
 
 # Home page
@@ -55,11 +60,20 @@ def signup():
                 captcha_verify_json = json.loads(captcha_verify.text)
 
                 if captcha_verify_json['success'] is False:
-                    print(captcha_verify_json)
                     return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Captcha failure")
 
             # Insert new user
-            result =  User.new_user(request.form['email'], request.form['password'])
+            result = User.new_user(request.form['email'], request.form['password'])
+
+            # Send verification email
+            
+            url = conf.domain + "/verify/" + timed_serializer.dumps(result.email, salt=conf.email_salt)
+
+            render_map = {
+                "url": url,
+            }
+            
+            send_email("verify_email.html", "Verification for VulnFeed", render_map, result.email)
             
             if result:
                 return redirect("/login", code=302)
@@ -68,6 +82,84 @@ def signup():
         
     else:
         return render_template('signup.html', sitekey=conf.recaptcha_sitekey)
+
+# Verify page
+@app.route('/verify/<token>', methods=['GET'])
+def verify(token):
+    try:
+        email = timed_serializer.loads(token, salt=conf.email_salt, max_age=86400)
+    except Exception as e:
+        return "Could not parse token"
+
+    user = User(email)
+
+    if user.hash is not None:
+        user.set_confirmed()
+        user.update()
+        return "Your address has been verified. You can now login!"
+    else:
+        return "Invalid token"
+
+
+# Forgot password page
+@app.route('/forgot', methods=['GET', 'POST'])
+def forgot():
+
+    if request.method == 'POST':
+        if not re.match(r"[^@$<>;'\"]+@[^@$<>;'\"]+\.[^@$<>;'\"]+", request.form['email']):
+            return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Invalid email address")
+        else:
+            # Captcha
+            if conf.recaptcha_sitekey and conf.recaptcha_secret:
+                captcha_response = request.form['g-recaptcha-response']
+                captcha_verify = requests.post('https://www.google.com/recaptcha/api/siteverify', data = {'secret': conf.recaptcha_secret, 'response': captcha_response})
+                captcha_verify_json = json.loads(captcha_verify.text)
+
+                if captcha_verify_json['success'] is False:
+                    return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Captcha failure")
+            
+            user = User(request.form['email'])
+
+            if user.hash is None:
+                return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Account not found")
+
+            url = conf.domain + "/resetpass/" + timed_serializer.dumps(user.email, salt=conf.email_salt)
+
+            render_map = {
+                "url": url,
+            }
+            
+            send_email("forget_email.html", "VulnFeed Password Reset", render_map, user.email)
+
+            return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, success_message="A password recover email has been sent to your email address")
+
+    else:
+        return render_template('forgot.html', sitekey=conf.recaptcha_sitekey)
+
+
+@app.route('/resetpass/<token>', methods=['GET', 'POST'])
+def resetpass(token):
+
+    try:
+        email = timed_serializer.loads(token, salt=conf.email_salt, max_age=7200)
+    except Exception as e:
+        return "Could not parse token"
+
+    if request.method == 'POST':
+        if request.form['password'] != request.form['password2']:
+            return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Passwords do not match!")
+        else:
+            user = User(email)
+            user.new_password(request.form['password'])
+            user.update()
+        return redirect("/login", code=302) 
+    else:
+        user = User(email)
+
+        if user.hash is not None:
+            return render_template('resetpass.html', user_token=token)
+        else:
+            return "Invalid token"
 
 # Login page
 @app.route('/login', methods=['GET', 'POST'])
@@ -79,11 +171,16 @@ def login():
     if request.method == 'POST':
         message = ""
         user = User(request.form['email'])
-        if user.login(request.form['password']):
+
+        if user.login(request.form['password']) and user.is_confirmed():
             session['logged_in'] = True
             session['user_email'] = request.form['email']
             clear_failed_login(request.remote_addr)
             return redirect("/", code=302)
+        elif not user.is_confirmed():
+            session['logged_in'] = False
+            session['user_email'] = ""
+            message = "You have not verified your email address"
         else:
             session['logged_in'] = False
             session['user_email'] = ""
