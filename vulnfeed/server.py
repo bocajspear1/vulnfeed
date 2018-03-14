@@ -67,7 +67,13 @@ def signup():
 
             # Send verification email
             
-            url = conf.domain + "/verify/" + timed_serializer.dumps(result.email, salt=conf.email_salt)
+            verify_token = timed_serializer.dumps(result.email, salt=conf.email_salt)
+
+            url = conf.domain + "/verify/" + verify_token
+
+            result.verify_token = verify_token
+
+            result.update()
 
             render_map = {
                 "url": url,
@@ -76,7 +82,7 @@ def signup():
             send_email("verify_email.html", "Verification for VulnFeed", render_map, result.email)
             
             if result:
-                return redirect("/login", code=302)
+                return render_template('success_to_login.html', message="Signup was successful. You should recieve an activation email to get started.")
             else:
                 return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Could not create account. Perhaps an account of that name already exists?")
         
@@ -93,10 +99,11 @@ def verify(token):
 
     user = User(email)
 
-    if user.hash is not None:
+    if user.hash is not None and user.verify_token == token:
         user.set_confirmed()
+        user.verify_token = ""
         user.update()
-        return "Your address has been verified. You can now login!"
+        return render_template('success_to_login.html', message="Your address has been verified. You can now login!")
     else:
         return "Invalid token"
 
@@ -123,7 +130,12 @@ def forgot():
             if user.hash is None:
                 return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Account not found")
 
-            url = conf.domain + "/resetpass/" + timed_serializer.dumps(user.email, salt=conf.email_salt)
+            verify_token = timed_serializer.dumps(user.email, salt=conf.email_salt)
+
+            url = conf.domain + "/resetpass/" + verify_token
+
+            user.verify_token = verify_token
+            user.update()
 
             render_map = {
                 "url": url,
@@ -145,16 +157,20 @@ def resetpass(token):
     except Exception as e:
         return "Could not parse token"
 
+    user = User(email)
+
+    if user.verify_token != token:
+        return "Invalid token"
+
     if request.method == 'POST':
         if request.form['password'] != request.form['password2']:
             return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Passwords do not match!")
         else:
-            user = User(email)
             user.new_password(request.form['password'])
+            user.verify_token = ""
             user.update()
         return redirect("/login", code=302) 
     else:
-        user = User(email)
 
         if user.hash is not None:
             return render_template('resetpass.html', user_token=token)
@@ -165,10 +181,11 @@ def resetpass(token):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 
-    if address_failed_login(request.remote_addr):
-        return render_template('login.html', server_error="You have exceeded the number of fail logins. Try again later")
-
     if request.method == 'POST':
+
+        if address_failed_login(request.remote_addr):
+            return render_template('login.html', server_error="You have exceeded the number of fail logins. Try again later")
+
         message = ""
         user = User(request.form['email'])
 
@@ -177,6 +194,12 @@ def login():
             session['user_email'] = request.form['email']
             clear_failed_login(request.remote_addr)
             return redirect("/", code=302)
+        # User doesn't exist
+        elif user.hash == None:
+            session['logged_in'] = False
+            session['user_email'] = ""
+            message = "Incorrect user/password"
+        # User is not confirmed
         elif not user.is_confirmed():
             session['logged_in'] = False
             session['user_email'] = ""
@@ -190,7 +213,7 @@ def login():
     else:
         return render_template('login.html')
 
-# Login page
+# Report viewer page
 @app.route('/report_viewer', methods=['GET'])
 def report_viewer():
     if not session.get('logged_in'):
@@ -210,6 +233,48 @@ def report_viewer():
          
     reports = database.reports.get_reports(date_obj)
     return render_template('report_view.html', days_reports=reports)
+
+# Profile page
+@app.route('/profile', methods=['GET'])
+def profile():
+    if not session.get('logged_in'):
+        return redirect("/login", code=302)
+
+    user = User(session['user_email'])
+
+
+    return render_template('profile.html', 
+                            email=user.email, 
+                            last_status=user.last_status, 
+                            rule_count=len(user.get_rules()),
+                            last_sent=user.get_last_run_date().strftime('%m/%d/%Y'))
+
+# Delete page
+@app.route('/delete', methods=['GET', 'POST'])
+def delete():
+    if not session.get('logged_in'):
+        return redirect("/login", code=302)
+
+    user = User(session['user_email'])
+
+    if request.method == 'POST':
+        if 'delete_token' in request.form:
+            try:
+                email = timed_serializer.loads(request.form['delete_token'], salt=conf.email_salt, max_age=7200)
+            except Exception as e:
+                return "Could not parse token"
+
+            if email == user.email:
+                user.delete()
+                del user
+                return redirect("/logout", code=302)
+        else:
+            return "Nope"
+    else:
+    
+        delete_token = timed_serializer.dumps(user.email, salt=conf.email_salt)
+
+        return render_template('delete.html', delete_token=delete_token)
 
 # Logout page
 @app.route('/logout')
@@ -234,15 +299,15 @@ def update_user_rules():
         return jsonify({"status": False})
 
     user = User(session['user_email'])
-    # try:
-    new_config = request.get_json()
-    user.set_rules(new_config['rules'])
-    user.set_days(new_config['days'])
-    user.update()
-    return jsonify({"status": True})
-    # except Exception as e:
-    #     print (e)
-    #     pass
+    try:
+        new_config = request.get_json()
+        user.set_rules(new_config['rules'])
+        user.set_days(new_config['days'])
+        user.update()
+        return jsonify({"status": True})
+    except Exception as e:
+        print (e)
+        return jsonify({"status": False})
 
 
 @app.route('/user_config.json')

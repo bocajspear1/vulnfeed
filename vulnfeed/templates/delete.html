@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>My Profile - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #main {
+                margin-top: 90px;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            <div class="alert alert-danger" role="alert">
+                Do you want to do this? ALL your data will be removed and you won't be able to log back in with this account!
+            </div>
+            <div class="alert alert-danger" role="alert">
+                You will not get any VulnFeed emails anymore. All your data will be removed! This cannot be undone!
+            </div>
+            <form action="/delete" method="post">
+                <input type="hidden" name="delete_token" id="delete_token" value="{{ delete_token }}"/>
+                <button type="submit" class="btn btn-danger">Yes</button>
+                <a href="/" class="btn btn-success">No</a>
+            </form>
+            
+        </div>
+
+        {% include 'footer.html' %}
+    </body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>Success</title>
+        {% include 'head.html' %}
+
+    </head>
+    <body>
+
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            <div class="alert alert-success" style="{{ 'display:none' if not message }}" role="alert">
+                {{ message }}
+                <br>
+                This page will redirect you to the login page in 5 seconds.
+            </div>
+            
+        </div>
+
+        {% include 'footer.html' %}
+        <script>
+            setTimeout(function(){
+                window.location = "/login";
+            }, 5000)
+        </script>
+    </body>
+</html>

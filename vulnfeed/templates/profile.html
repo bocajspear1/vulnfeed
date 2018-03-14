@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>My Profile - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #main {
+                margin-top: 90px;
+            }
+            textarea {
+                width: 100%;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            <ul class="list-group">
+                <li class="list-group-item"><strong>Email:</strong> {{ email }}</li>
+                <li class="list-group-item"><strong>Rule Count:</strong> {{ rule_count }}</li>
+                <li class="list-group-item"><strong>Last Sent:</strong> {{ last_sent }}</li>
+                <li class="list-group-item"><strong>Last Send Status:</strong> {{ last_status }}</li>
+            </ul>
+            <a href="/delete" class="btn btn-danger">Delete My Account</a>
+        </div>
+
+        {% include 'footer.html' %}
+    </body>
+</html>

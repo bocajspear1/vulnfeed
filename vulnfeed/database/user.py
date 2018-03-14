@@ -2,7 +2,7 @@
 from bson.objectid import ObjectId
 import pymongo.errors as mongo_errors
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from database import Client
 from passlib.hash import pbkdf2_sha256
@@ -10,7 +10,7 @@ from passlib import pwd
 
 def get_users(start=0, limit=50):
     user_chunk = []
-    user_chunk_cursor = Client.users.find({}).skip(start).limit(limit)
+    user_chunk_cursor = Client.users.find({"confirmed": True}).skip(start).limit(limit)
     for item in user_chunk_cursor:
         user_chunk.append(str(item['email']))
     return user_chunk
@@ -28,8 +28,8 @@ class User:
         self.days = []
         self.last_run = 0
         self.verify_token = ""
-        self.verify_salt = ""
         self._confirmed = False
+        self.last_status = "None"
 
         if doc:
             self.rules = doc['rules']
@@ -38,6 +38,7 @@ class User:
             self.last_run = doc['last_run']
             self.verify_token = doc.get("verify_token", "")
             self._confirmed = doc.get("confirmed", True)
+            self.last_status = doc.get("last_status")
 
     def set_days(self, new_days):
         if not isinstance(new_days, list):
@@ -69,9 +70,13 @@ class User:
             "last_run": self.last_run,
             "verify_token": self.verify_token,
             "confirmed": self._confirmed,
-            "password": self.hash
+            "password": self.hash,
+            "last_status": self.last_status
         }
         Client.users.update({"email": self.email}, {"$set": new_data}, multi=False, upsert=False)
+
+    def delete(self):
+        Client.users.remove({"email": self.email})
 
     def get_rules(self):
         return self.rules
@@ -87,6 +92,18 @@ class User:
 
     def new_password(self, password):
         self.hash = pbkdf2_sha256.hash(password)
+
+    def get_last_run_date(self):
+        current_time = datetime.combine(date.today(), datetime.min.time())
+        current_day = int(current_time.strftime("%j"))
+
+        year = datetime.now().year
+
+        if current_day < self.last_run:
+            year -= 1
+
+        full_date = datetime(year, 1, 1) + timedelta(self.last_run - 1)
+        return full_date
 
     @classmethod
     def new_user(cls, email, password):

@@ -11,7 +11,6 @@ ATTEMPT_COUNT = 5
 
 def address_failed_login(address):
     attempt_data = Client.login_attempts.find_one({"address": address})
-    print(attempt_data)
     if not attempt_data:
         Client.login_attempts.insert({"address": address, "attempt_count": 1, "last_attempt": datetime.now()})
     else:

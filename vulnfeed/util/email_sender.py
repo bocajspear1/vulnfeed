@@ -9,7 +9,6 @@ CONFIG = Config()
 
 def send_email(template, subject, data_map, recipient):
     template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "email_templates", template)
-    print(template_path)
 
     smtp_config = {
         'host': CONFIG.smtp_host,
@@ -19,10 +18,12 @@ def send_email(template, subject, data_map, recipient):
         'ssl': True
     }
 
-    m = emails.Message(html=JinjaTemplate(open(template_path).read()), subject=subject, mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
-    response = m.send(render=data_map, to=recipient, smtp=smtp_config)
+    message = emails.Message(html=JinjaTemplate(open(template_path).read()), subject=subject, mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
 
-    if response.status_code == 250:
-        return True
-    else:
-        return False
+    if CONFIG.has_dkim:
+        message.dkim(key=open(CONFIG.dkim_privkey), domain=CONFIG.dkim_domain, selector=CONFIG.dkim_selector)
+
+
+    response = message.send(render=data_map, to=recipient, smtp=smtp_config)
+
+    return response

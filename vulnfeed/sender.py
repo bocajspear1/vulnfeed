@@ -7,8 +7,7 @@ import calendar
 import re
 import time
 
-import emails
-from emails.template import JinjaTemplate 
+from util.email_sender import send_email
 
 from database.user import get_users, User
 from database.feed import get_feed_reports
@@ -97,6 +96,11 @@ class SenderWorker(threading.Thread):
     def process_user(self, user_email):
         # Get object
         u = User(user_email)
+
+        if u.is_confirmed() == False:
+            print("Ignoring " + user_email)
+            return
+
         days_to_run = u.get_days()
         # Last run is day of year
         last_day = u.last_run
@@ -165,22 +169,13 @@ class SenderWorker(threading.Thread):
             "scored_reports": scored_reports,
             "unscored_reports": unscored_reports
         }
-        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", 'email_template.html')
 
-        smtp_config = {
-            'host': CONFIG.smtp_host,
-            'port': CONFIG.smtp_port,
-            'user': CONFIG.smtp_user,
-            'password': CONFIG.smtp_pass,
-            'ssl': True
-        }
-
-        m = emails.Message(html=JinjaTemplate(open(template_path).read()), subject="VulnFeed Report for " + time.strftime("%m/%d/%Y"), mail_from=("VulnFeed Agent", "vulnfeed@j2h2.com"))
-        response = m.send(render=render_map, to=user_email, smtp=smtp_config)
-        print(response)
+        print("Sending for " + user_email)
+        response = send_email("reports_email.html", "VulnFeed Report for " + time.strftime("%m/%d/%Y"), render_map, user_email)
 
         # Update the users last sent day
         u.last_run = current_day_of_year
+        u.last_status = "Status: " + str(response.status_code) + ", " + response.status_text.decode("utf-8")
         u.update()
 
     # Process each user

@@ -7,3 +7,7 @@ footer a {
     display: inline-block;
     padding: 15px;
 }
+
+#main {
+    margin-top: 90px;
+}

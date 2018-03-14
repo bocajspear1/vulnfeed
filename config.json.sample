@@ -6,5 +6,18 @@
         "password" : "PASSWORD"
     },
     "mongodb": "mongodb://someplace",
-    "secret": "SUPER_SECRET_KEY"
+    "secret": "SUPER_SECRET_KEY",
+    "admin_email": "junyunharold1@gmail.com",
+    "domain": "http(s)://YOUR.DOMAIN.com",
+    "email_salt": "RANDOM_STRING",
+    "debug": true,
+    "recaptcha": {
+        "secret": "",
+        "sitekey": ""
+    },
+    "dkim": {
+        "privkey": "PATH_TO_KEY",
+        "domain": "DOMAIN",
+        "selector": "SELECTOR"
+    }
 }

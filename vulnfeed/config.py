@@ -20,6 +20,18 @@ class Config():
         self.admin_email = raw_config['admin_email']
         self.domain = raw_config['domain']
         self.email_salt = raw_config['email_salt']
+
+        self.has_dkim = False
+        self.dkim_privkey = ""
+        self.dkim_domain = ""
+        self.dkim_selector = ""
+        if raw_config['dkim']:
+            self.has_dkim = True
+            self.dkim_privkey = raw_config['dkim']['privkey']
+            if not os.path.exists(self.dkim_privkey):
+                raise OSError("DKIM key not found!")
+            self.dkim_domain = raw_config['dkim']['domain']
+            self.dkim_selector = raw_config['dkim']['selector']
         
 
 if __name__ == "__main__":
