@@ -8,6 +8,8 @@
         {% include 'head.html' %}
 
         <style>
+            @import url(https://fonts.googleapis.com/css?family=Raleway);
+
             #header {
                 padding: 40px;
                 font-size: 3em;
@@ -15,24 +17,41 @@
             #info {
                 text-align: center;
             }
+            #info p {
+                padding: 10px;
+                width: 60%;
+                margin-left: auto;
+                margin-right: auto;
+                line-height: 1.5em;
+            }
+            h1 {
+                font-family: 'Raleway', sans-serif;
+                padding: 40px;
+                padding-bottom: 60px;
+            }
+            h2 {
+                padding-bottom: 90px;
+            }
         </style>
 
     </head>
     <body>
 
         <div class="container">
-             <div class="jumbotron" id="info">
+            <div class="jumbotron" id="info">
                 <h1 class="display-3">VulnFeed</h1>
-                <p class="lead">
-                    <ul>
-                        <li>Have you subscribed to vulnerability feeds, but get overwhelmed with reports?</li>
-                        <li>Is your inbox filling with vulnerability emails?</li>
-                        <li>Are you struggling to look for vulnerabilities you care about?</li>
-                    </ul>
+                <h2>Customized Vulnerability Email Reports</h2>
+                <hr>
+                <p>
+                    VulnFeed aggregates vulnerability reports into a single service, and allows you to customize and sort the reports according to your preference.
                 </p>
-                <h3>VulnFeed is the service that aggregates vulnerability feeds into a personalized single email just for you!</h3>
-                <p><a class="btn btn-lg btn-primary" href="/login" role="button">Login</a></p>
-                <p><a class="btn btn-lg btn-success" href="/signup" role="button">Sign Up</a></p>
+                <p>
+                    Instead of losing your desired vulnerability reports in a mess of unnecessary reports, you get a personalized email, with vulnerabilities in an ordered list. 
+                </p>
+                <p>
+                    <a class="btn btn-lg btn-primary" href="/login" role="button">Login</a>
+                    <a class="btn btn-lg btn-success" href="/signup" role="button">Sign Up</a>
+                </p>
             </div>
         </div>
 
