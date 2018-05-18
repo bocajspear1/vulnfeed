@@ -6,11 +6,36 @@ The goal of this project is to have a service that sorts through vulnerability r
 
 No more filled email inboxes and no more slow perusings of massive vulnerability lists.
 
+
 ## Development
 
 This service is written in Python 3. It uses Flask for the frontend with Bootstrap.
 
 This is currently very alpha-level stuff! Feel free to contribute.
+
+## Install 
+
+Install Python dependencies:
+```
+pip3 install -r dependencies.txt
+```
+
+Setup the database:
+```
+mongo < database-setup.js
+```
+
+Edit the config.
+```
+cp config.json.sample config.json
+<EDITOR> config.json
+```
+
+### Production Install 
+
+To generate a DKIM key, use `ssh-keygen` to generate a key. You'll need to set the DKIM DNS key similar to what's found in this article: https://support.rackspace.com/how-to/create-a-dkim-txt-record/
+
+> If your're having trouble with your key not resolving in DNS, try using a 1024 sized key. Some DNS providers do not support the larger 2048 sized keys.
 
 ## Process
 
@@ -29,6 +54,15 @@ Words can be combined with operators for different effects. There are three bina
 * AND - Both words in this operation must be in the report
 * OR - The report must have at least one word in the report
 * ANDOR - The report must have at least one word in the report, but if both are present in the order given in the rule, the score is doubled.
+
+## Usage
+
+VulnFeed consists of three main scripts:
+* The web application - `vulnfeed/server.py` or `vulnfeed/wsgi.py`
+* The feed extraction - `vulnfeed/extractor_agent.py` (Note that feed elements are imported only once, so if you run the extractor twice on the same day, you might get no new items)
+* The email sender - `vulnfeed/sender.py`
+
+The web server is standalone (mainly for testing) or under wsgi when in production. The other two are run independently. In production, you might use cron jobs to run these scripts at a certain time.
 
 ## Contributers
 
