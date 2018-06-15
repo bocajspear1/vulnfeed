@@ -290,7 +290,16 @@ def rules_list():
     if not session.get('logged_in'):
         return jsonify([])
 
-    rule_list = rules.get_rules()
+    filter_string=""
+
+    if "filter" in request.args:
+        filter_string = request.args.get("filter")
+
+    # Test to ensure the filter is a simple string
+    if filter_string != "" and not re.match(r"[a-zA-Z0-9]+", filter_string):
+        return jsonify([])
+
+    rule_list = rules.get_rules(filter_string)
     return jsonify(rule_list)
 
 @app.route('/update_user_config', methods=['POST'])
@@ -356,7 +365,35 @@ def rules_builder():
         else:
             return render_template('rule_builder.html')
     else:
-        return render_template('rule_builder.html')  
+        if "test_report" in request.args:
+            report = database.reports.get_report(request.args.get("test_report"))
+            if report is not None:
+                return render_template('rule_builder.html', input_text=report['contents'])
+            else:
+                return render_template('rule_builder.html', error="Invalid report ID")
+                  
+        elif "edit" in request.args:
+            rule = Rule(request.args.get("edit"))
+            if rule.data:
+                return render_template('rule_builder.html', 
+                    rule_string=rule.data['rule'], 
+                    rule_name=rule.data['name'],
+                    rule_description=rule.data['description']
+                )
+                
+            else:
+                return render_template('rule_builder.html', error="Invalid rule ID")
+        else:
+            return render_template('rule_builder.html')  
+
+
+@app.route('/tos', methods=['GET'])
+def tos():
+    return render_template('tos.html')
+
+@app.route('/privacy', methods=['GET'])
+def privacy():
+    return render_template('privacy.html')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=4000, debug=conf.debug)

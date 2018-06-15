@@ -112,6 +112,7 @@
                 <div class="col">
                     <h2>Available Rules</h2>
                     <p>Use the <a href="/rule_builder">Rule Builder</a> to add new rules</p>
+                    <p><input type="text" id="filter" placeholder="Filter by keyword" class="form-control"></p>
                     <ul id="all_rules_list" class="rulesSort">
                             
                     </ul>
@@ -123,7 +124,9 @@
 
         <script>
 
-            function get_user_rules() {
+            var known_enabled_rules = [];
+
+            function get_enabled_rules() {
                 var my_rules = $("#added_rules_list li");
                 var return_list = [];
                 for (var i = 0; i < my_rules.length; i++) {
@@ -137,7 +140,7 @@
                 return return_list;
             }
 
-            function get_days() {
+            function get_enabled_days() {
                 var new_days = [];
                 var checkboxes = $("#days-select input");
                 for (var i = 0; i < checkboxes.length; i++) {
@@ -153,8 +156,8 @@
                 
                 var new_config = {};
 
-                new_config['rules'] = get_user_rules();
-                new_config['days'] = get_days();
+                new_config['rules'] = get_enabled_rules();
+                new_config['days'] = get_enabled_days();
                 
                 $.ajax({
                     url: "/update_user_config",
@@ -168,9 +171,19 @@
                 });
             });
 
+            $("#filter").on('input propertychange paste', function() {
+                // Clear the current list
+                $( "#all_rules_list li" ).remove();
+                var filter = $("#filter").val();
+                console.log(filter);
+                load_all_rules(known_enabled_rules, function(err, result){
+                    update_list_ui();
+                });
+            });
+
 
             function make_item(rule_id, name, description, rule, option, enabled) {
-                var base = "<li class='ui-state-default' id='" + rule_id + "'><h4>" + name + "</h4>" + description + "<pre>" +rule  + "</pre>Weight: <select id='" + rule_id + "-weight' ";
+                var base = "<li class='ui-state-default' id='" + rule_id + "'><h4>" + name + "</h4>" + description + "<pre>" + rule + "</pre>Weight: <select id='" + rule_id + "-weight' ";
                 
                 if (enabled!==true) {
                     base += "disabled"
@@ -191,7 +204,7 @@
                 } else {
                     base += "<option value='low'>Low</option>";
                 }
-                base += "</select></li>";
+                base += "</select><a href='/rule_builder?edit=" + rule_id + "'>Edit</a></li>";
                 return base;
             }
 
@@ -226,7 +239,7 @@
             }
 
             function load_all_rules(added_rules, callback) {
-                $.get("/all_rules.json", function(all_rules){
+                $.get("/all_rules.json", {filter: $("#filter").val()}, function(all_rules){
                     console.log(added_rules)
                     if (all_rules) {
 
@@ -245,24 +258,34 @@
                 });
             }   
 
+            function update_list_ui() {
+                $( function() {
+                    $( "#added_rules_list, #all_rules_list" ).sortable({
+                        connectWith: ".rulesSort",
+                        receive: function( event, ui ) {
+                            var item_id = ui.item[0].id;
+                            var sender = ui.sender[0].id;
+                            if (sender == "added_rules_list") {
+                                $("#" + item_id + "-weight").prop("disabled", true);
+                                var find_index = known_enabled_rules.indexOf(item_id);
+                                if (find_index != -1) {
+                                    known_enabled_rules.splice(find_index, 1);
+                                }
+                            } else if (sender == "all_rules_list") {
+                                $("#" + item_id + "-weight").prop("disabled", false);
+                                known_enabled_rules.push(item_id);
+                                console.log(item_id, known_enabled_rules)
+                            }
+                        }
+                    }).disableSelection();
+                } );
+            }
+
             function init_lists() {
                 load_user_config(function(err, user_rules){
-                    load_all_rules(user_rules, function(err, result){
-                        $( function() {
-                            $( "#added_rules_list, #all_rules_list" ).sortable({
-                                connectWith: ".rulesSort",
-                                receive: function( event, ui ) {
-                                    var item_id = ui.item[0].id;
-                                    var sender = ui.sender[0].id;
-                                    if (sender == "added_rules_list") {
-                                        $("#" + item_id + "-weight").prop("disabled", true);
-                                    } else if (sender == "all_rules_list") {
-                                        $("#" + item_id + "-weight").prop("disabled", false);
-                                    }
-                                }
-                            }).disableSelection();
-                        } );
-                        
+                    known_enabled_rules = user_rules;
+                    load_all_rules(known_enabled_rules, function(err, result){
+                        update_list_ui();
                     });
                 });
             }

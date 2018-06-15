@@ -22,19 +22,31 @@
 
         <div class="container" id="main">
             <div>
-                <p>VulnFeed rules use a very simple language used to indicate what should be matched. It consists of words combined with operators.</p>
-
-
-                <p><strong>Words</strong> are simple strings, and must be all lowercase (the normalizer puts all text in lowercase). These strings should correspond to an actual complete word (a string separated by spaces, -, or _) that you want to match in the report. If a report contains the complete word, the report receives a score. For example, if the word `vulnfeed` is in a rule, it will match a report with <i>bug report for vulnfeed</i>, but not <i>bug report for vulnfeedinator</i>.</p>
-                        
                 <p>
-                    Words can be combined with operators for different effects. There are three binary operators (requires two words):
-                    <ul>
-                        <li><strong>AND</strong> - Both words in this operation must be in the report.</li>
-                        <li><strong>OR</strong> - The report must have at least one word in the report.</li>
-                        <li><strong>ANDOR</strong> - The report must have at least one word in the report, but if both are present in the order given in the rule, the score is doubled.</li>
-                    </ul>
-                </p>        
+                    <a class="btn btn-primary" data-toggle="collapse" href="#rule-help" role="button" aria-expanded="false" aria-controls="rule-help">
+                        Rule Building Help
+                    </a>
+                </p>
+               
+                <div class="collapse" id="rule-help">
+                    <div class="card card-body">
+                            <p>VulnFeed rules use a very simple language used to indicate what should be matched. It consists of words combined with operators.</p>
+
+
+                            <p><strong>Words</strong> are simple strings, and must be all lowercase (the normalizer puts all text in lowercase). These strings should correspond to an actual complete word (a string separated by spaces, -, or _) that you want to match in the report. If a report contains the complete word, the report receives a score. For example, if the word `vulnfeed` is in a rule, it will match a report with <i>bug report for vulnfeed</i>, but not <i>bug report for vulnfeedinator</i>.</p>
+                                    
+                            <p>
+                                Words can be combined with operators for different effects. There are three binary operators (requires two words):
+                                <ul>
+                                    <li><strong>AND</strong> - Both words in this operation must be in the report.</li>
+                                    <li><strong>OR</strong> - The report must have at least one word in the report.</li>
+                                    <li><strong>ANDOR</strong> - The report must have at least one word in the report, but if both are present in the order given in the rule, the score is doubled.</li>
+                                </ul>
+                            </p>   
+                    </div>
+                </div>
+
+                     
             </div>
             <form method="POST" action="/rule_builder">
                 <div class="row">
@@ -62,11 +74,11 @@
                 <div class="row">
                     <div class="col">
                         <h4>Test this content</h4>
-                        <textarea name="input_text">{{ input_text }}</textarea>
+                        <textarea rows="20" name="input_text">{{ input_text }}</textarea>
                     </div>
                     <div class="col">
                         <h4>Test results</h4>
-                        <textarea disabled>{{ output }}</textarea>
+                        <input type="text" disabled value="{{ output }}">
                     </div>
                 </div>
             </form>

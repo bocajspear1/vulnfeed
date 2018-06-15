@@ -1,9 +1,15 @@
 from database import Client
 from bson.objectid import ObjectId
+import bson.errors
 
-def get_rules():
+def get_rules(filter_string):
     rules = []
-    cursor = Client.rules.find({})
+    query = {}
+    if filter_string != "":
+        regex_string = ".*" + filter_string + ".*"
+        query = { "name": {"$regex": regex_string, "$options": "i"} }
+    print(query)
+    cursor = Client.rules.find(query)
     for rule in cursor:
         rule['id'] = str(rule['_id'])
         del rule['_id']
@@ -26,11 +32,13 @@ def fill_rules(rule_list):
 
 class Rule():
     def __init__(self, rule_id):
-        doc = Client.users.find_one({"_id": ObjectId(rule_id)})
+        try:
+            self.data = Client.rules.find_one({"_id": ObjectId(rule_id)})
+        except bson.errors.InvalidId:
+            self.data = None
 
     @classmethod
     def new_rule(cls, name, rule_string, description):
-        print("New Rule")
         rules_coll = Client.rules
         
         result = rules_coll.insert_one({

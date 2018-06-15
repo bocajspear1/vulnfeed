@@ -21,13 +21,41 @@
         {% include 'header.html' %}
 
         <div class="container" id="main">
-            <ul class="list-group">
-                <li class="list-group-item"><strong>Email:</strong> {{ email }}</li>
-                <li class="list-group-item"><strong>Rule Count:</strong> {{ rule_count }}</li>
-                <li class="list-group-item"><strong>Last Sent:</strong> {{ last_sent }}</li>
-                <li class="list-group-item"><strong>Last Send Status:</strong> {{ last_status }}</li>
-            </ul>
-            <a href="/delete" class="btn btn-danger">Delete My Account</a>
+            <p>
+                <ul class="list-group">
+                    <li class="list-group-item"><strong>Email:</strong> {{ email }}</li>
+                    <li class="list-group-item"><strong>Active Rule Count:</strong> {{ rule_count }}</li>
+                    <li class="list-group-item"><strong>Last Sent:</strong> {{ last_sent }}</li>
+                    <li class="list-group-item"><strong>Last Send Status:</strong> {{ last_status }}</li>
+                </ul>
+            </p>
+            <p>
+                <a class="btn btn-success" data-toggle="collapse" href="#my-rules" role="button" aria-expanded="false" aria-controls="my-rules">
+                    My Contributed Rules
+                </a>
+                <div class="collapse" id="my-rules">
+                    <div class="card card-body">
+                        
+                    </div>
+                </div>
+            </p>
+            <p>
+                <a class="btn btn-primary" data-toggle="collapse" href="#rule-help" role="button" aria-expanded="false" aria-controls="rule-help">
+                    View My Raw Account Data
+                </a>
+                <div class="collapse" id="rule-help">
+                    <div class="card card-body">
+                        <pre>
+                            {{raw_profile}}
+                        </pre>
+                    </div>
+                </div>
+            </p>
+            
+            
+            <p>
+                <a href="/delete" class="btn btn-danger">Delete My Account</a>
+            </p>
         </div>
 
         {% include 'footer.html' %}

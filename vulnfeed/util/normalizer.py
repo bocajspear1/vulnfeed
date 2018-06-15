@@ -18,9 +18,9 @@ class Normalizer():
         # Normalize links
         data = re.sub("<[ ]*a[ ]*[^>]*href[ ]*=[ ]*['\"]([^'\"]*)['\"][ ]*>([^><]*)<[ ]*/[ ]*a[ ]*>", r"\1 \2", data)
         # Remove separaters
-        data = re.sub(r"[-_=.]{3,}", "", data)
+        data = re.sub(r"[-_=.]{3,}", " ", data)
         # Strip out tags
-        data = re.sub(r"</?[a-z]+>", "", data)
+        data = re.sub(r"</?[a-z]+>", " ", data)
         # Strip out puncuation and special chars
         data = re.sub(r"[,:;.\[\](){}$-]", " ", data)
 

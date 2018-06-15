@@ -39,6 +39,7 @@
                         <th>Source</th>
                         <th>Title</th>
                         <th>Description</th>
+                        <th>Test</th>
                     </tr>
                     {% for report in days_reports %}
                     
@@ -51,6 +52,9 @@
                         </td>
                         <td>
                             {{ report.contents|truncate(300) }}
+                        </td>
+                        <td>
+                            <a href="/rule_builder?test_report={{ report.id }}">Test</a>
                         </td>
                     </tr>
                     {% endfor %}

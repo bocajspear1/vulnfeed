@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>VulnFeed Terms of Service</title>
+        
+        {% include 'head.html' %}
+
+        <style>
+            @import url(https://fonts.googleapis.com/css?family=Raleway);
+
+            #header {
+                padding: 40px;
+                font-size: 3em;
+            }
+            #info {
+                text-align: center;
+            }
+            #info p {
+                padding: 10px;
+                width: 60%;
+                margin-left: auto;
+                margin-right: auto;
+                line-height: 1.5em;
+            }
+
+        </style>
+
+    </head>
+    <body>
+
+        <div class="container">
+            <h1>Terms of Service</h1>
+            <p>
+                VulnFeed is a service provided in the hopes it will be useful. This service (VulnFeed) shouldn't be used as security advice or instruction.
+            </p>
+            <h3>Emails</h3>
+            <p>
+                By using this service, you authorize this instance of VulnFeed to send you email from the email address {{ admin_email }}. Emails will be sent only on the days you indicate in your account and when system-wide annoucments are made.
+            </p>
+            <h3>Accounts</h3>
+            <p>
+                VulnFeed is provided as a service to you, the user. Accounts determined to be abusing this service in any way will be deleted.
+            </p>
+            <h3>Content</h3>
+            <p>
+                The only content generated on VulnFeed is the rules. All the contents of the feeds are not content of VulnFeed and the operator of this service is not responsible for the content and accuracy of that content. VulnFeed only organizes contents as does not create vulnerabilty feed content.
+            </p>
+            <p>
+                All rules generated on VulnFeed are public to all users of VulnFeed. <strong>Do not put private data in rules!</strong> Contents of rules that are determined to contain private data or personally identifiable data (such as emails, addresses, etc.) will be removed. Rules containing offensive or illegal content will be removed as well and offending accounts will be deleted.
+            </p>
+            
+        </div>
+
+        {% include 'footer.html' %}
+
+    </body>
+</html>
