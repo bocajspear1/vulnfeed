@@ -18,8 +18,12 @@ def get_users(start=0, limit=50):
 
 class User:
 
-    def __init__(self, email):
-        doc = Client.users.find_one({"email": email})
+    def __init__(self, email=None, id=None):
+        doc = None
+        if email:
+            doc = Client.users.find_one({"email": email})
+        elif id:
+            doc = Client.users.find_one({"_id": ObjectId(id)})
 
         self.email = email
         self.rules = []
@@ -30,6 +34,9 @@ class User:
         self.verify_token = ""
         self._confirmed = False
         self.last_status = "None"
+        self.last_scored_list = []
+        self.last_unscored_list = []
+        self.id = None
 
         if doc:
             self.rules = doc['rules']
@@ -39,6 +46,9 @@ class User:
             self.verify_token = doc.get("verify_token", "")
             self._confirmed = doc.get("confirmed", True)
             self.last_status = doc.get("last_status")
+            self.last_scored_list = doc.get("last_scored_list", [])
+            self.last_unscored_list = doc.get("last_unscored_list", [])
+            self.id = str(doc['_id'])
 
     def set_days(self, new_days):
         if not isinstance(new_days, list):
@@ -71,7 +81,9 @@ class User:
             "verify_token": self.verify_token,
             "confirmed": self._confirmed,
             "password": self.hash,
-            "last_status": self.last_status
+            "last_status": self.last_status,
+            "last_scored_list": self.last_scored_list,
+            "last_unscored_list": self.last_unscored_list
         }
         Client.users.update({"email": self.email}, {"$set": new_data}, multi=False, upsert=False)
 

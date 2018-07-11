@@ -34,17 +34,30 @@ class Rule():
     def __init__(self, rule_id):
         try:
             self.data = Client.rules.find_one({"_id": ObjectId(rule_id)})
+            self.id = rule_id
         except bson.errors.InvalidId:
             self.data = None
 
     @classmethod
-    def new_rule(cls, name, rule_string, description):
+    def new_rule(cls, name, rule_string, description, owner):
         rules_coll = Client.rules
         
         result = rules_coll.insert_one({
             "name": name,
             "rule":  rule_string,
-            "description": description
+            "description": description,
+            "owner": str(owner),
+            "history": []
         })
         return cls(result.inserted_id)
+
+    def update_rule_string(self, new_rule_string):
+        if 'history' not in self.data:
+            self.data['history'] = []
+        
+        self.data['history'].append(self.data['rule'])
+        self.data['rule'] = new_rule_string
+
+    def update(self):
+        Client.rules.update({"_id": ObjectId(self.id)}, {"$set": self.data}, multi=False, upsert=False)
         

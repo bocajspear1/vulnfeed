@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <title>Report Viewer - VulnFeed</title>
+        {% include 'head.html' %}
+
+        <style>
+            #main {
+                margin-top: 90px;
+            }
+            textarea {
+                width: 100%;
+            }
+        </style>
+
+    </head>
+    <body>
+
+        {% include 'header.html' %}
+
+        <div class="container" id="main">
+            
+            <h3>Scored Reports</h3>
+            <table border="0" cellpadding="0" cellspacing="0" width="90%" class="table">
+
+                {% if last_scored_reports|length > 0 %}
+                    <tr>
+                        <td colspan="4">
+                            You had {{ last_scored_reports|length }} in your last VulnFeed report.
+                        </td>
+                    </tr>        
+                    <tr>
+                        <th>Score</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Test</th>
+                    </tr>
+                    {% for item in last_scored_reports %}
+                    
+                    <tr>
+                        <td>
+                            {{ item.score }}
+                        </td>
+                        <td>
+                            <a href="{{ item.report.link }}"><strong>{{ item.report.title|e }}</strong></a>
+                        </td>
+                        <td>
+                            {{ item.report.contents|truncate(300) }}
+                        </td>
+                        <td>
+                            <a href="/rule_builder?test_report={{ item.report.id }}">Test</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                {% else %}
+                    <tr>
+                        <td>
+                            No reports were scored for you :(
+                        </td>
+                    </tr>
+                {% endif %}
+                    
+                </table>
+
+            <h3>Unscored Reports</h3>
+            <table border="0" cellpadding="0" cellspacing="0" width="90%" class="table">
+
+                {% if last_unscored_reports|length > 0 %}
+                    <tr>
+                        <td colspan="3">
+                            You had {{ last_unscored_reports|length }} unscored reports.
+                        </td>
+                    </tr>        
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Test</th>
+                    </tr>
+                    {% for item in last_unscored_reports %}
+                    
+                    <tr>
+                        <td>
+                            <a href="{{ item.report.link }}"><strong>{{ item.report.title|e }}</strong></a>
+                        </td>
+                        <td>
+                            {{ item.report.contents|truncate(300) }}
+                        </td>
+                        <td>
+                            <a href="/rule_builder?test_report={{ item.report.id }}">Test</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                {% else %}
+                    <tr>
+                        <td>
+                            No reports were unscored for you :|
+                        </td>
+                    </tr>
+                {% endif %}
+                    
+                </table>
+
+                
+            </table>
+        </div>
+
+        {% include 'footer.html' %}
+
+        
+    </body>
+</html>

@@ -97,7 +97,7 @@ def verify(token):
     except Exception as e:
         return "Could not parse token"
 
-    user = User(email)
+    user = User(email=email)
 
     if user.hash is not None and user.verify_token == token:
         user.set_confirmed()
@@ -125,7 +125,7 @@ def forgot():
                 if captcha_verify_json['success'] is False:
                     return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Captcha failure")
             
-            user = User(request.form['email'])
+            user = User(email=request.form['email'])
 
             if user.hash is None:
                 return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Account not found")
@@ -157,7 +157,7 @@ def resetpass(token):
     except Exception as e:
         return "Could not parse token"
 
-    user = User(email)
+    user = User(email=email)
 
     if user.verify_token != token:
         return "Invalid token"
@@ -187,7 +187,7 @@ def login():
             return render_template('login.html', server_error="You have exceeded the number of fail logins. Try again later")
 
         message = ""
-        user = User(request.form['email'])
+        user = User(email=request.form['email'])
 
         if user.login(request.form['password']) and user.is_confirmed():
             session['logged_in'] = True
@@ -234,13 +234,26 @@ def report_viewer():
     reports = database.reports.get_reports(date_obj)
     return render_template('report_view.html', days_reports=reports)
 
+# Report viewer page
+@app.route('/last_report', methods=['GET'])
+def last_report():
+    if not session.get('logged_in'):
+        return redirect("/login", code=302)
+
+    user = User(email=session['user_email'])
+    if user:
+        return render_template('last_report.html', last_scored_reports=user.last_scored_list, last_unscored_reports=user.last_unscored_list)
+    else:
+        return "ERROR: User not found!"
+    # 
+
 # Profile page
 @app.route('/profile', methods=['GET'])
 def profile():
     if not session.get('logged_in'):
         return redirect("/login", code=302)
 
-    user = User(session['user_email'])
+    user = User(email=session['user_email'])
 
 
     return render_template('profile.html', 
@@ -255,7 +268,7 @@ def delete():
     if not session.get('logged_in'):
         return redirect("/login", code=302)
 
-    user = User(session['user_email'])
+    user = User(email=session['user_email'])
 
     if request.method == 'POST':
         if 'delete_token' in request.form:
@@ -307,7 +320,7 @@ def update_user_rules():
     if not session.get('logged_in'):
         return jsonify({"status": False})
 
-    user = User(session['user_email'])
+    user = User(email=session['user_email'])
     try:
         new_config = request.get_json()
         user.set_rules(new_config['rules'])
@@ -324,44 +337,66 @@ def user_rules():
     if not session.get('logged_in'):
         return jsonify({"status": False})
 
-    user = User(session['user_email'])
+    user = User(email=session['user_email'])
     resp = {}
     resp['rules'] = rules.fill_rules(user.get_rules())
     resp['days'] = user.get_days()
 
     return jsonify(resp)
 
-# Rule builder page
+# Rule test
+@app.route('/rule_test.json', methods=['POST'])
+def rule_test():
+    parser = VulnFeedRuleParser()
+    error = None
+    output = ""
+    score = -1
+    try:
+        test_input = request.get_json()
+        parser.parse_rule(test_input['rule_string'])
+        score, _ = parser.process_raw_text(test_input['test_data'])
+    except ValueError as e:
+        print("error!")
+        error = str(e)
+
+    resp = {
+        "error": error,
+        "score": score
+    }
+
+    return jsonify(resp)
+
+# Rule builder/editor page
 @app.route('/rule_builder', methods=['GET', 'POST'])
 def rules_builder():
+    # Check if logged in
     if not session.get('logged_in'):
         return redirect("/login", code=302)
 
+    user = User(email=session['user_email'])
+
     if request.method == 'POST':
         # Check for test
-        if request.form['rule_string'] and "test" in request.form:
-            parser = VulnFeedRuleParser()
-            error = ""
-            output = ""
-            score = -1
-            try:
-                parser.parse_rule(request.form['rule_string'])
-                score, _ = parser.process_raw_text(request.form['input_text'])
-            except ValueError as e:
-                print("error!")
-                error = str(e)
+        if request.form['rule_name'] and request.form['rule_string'] and "save" in request.form:
+            new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'], user.id)
+            return render_template('rule_builder.html', info="Your rule has been create and saved successfully")
+        elif request.form['rule_name'] and request.form['rule_string'] and request.form['rule_id'] and "update" in request.form:
 
-            return render_template('rule_builder.html', 
-                                   output=score, 
-                                   error=error, 
-                                   rule_string=request.form['rule_string'], 
-                                   rule_name=request.form['rule_name'],
-                                   rule_description=request.form['rule_description'],
-                                   input_text=request.form['input_text']
-                                  )
-        elif request.form['rule_name'] and request.form['rule_string'] and "save" in request.form:
-            new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'])
-            return render_template('rule_builder.html')
+            rule = Rule(request.form['rule_id'])
+
+            if rule.data:
+                if rule.data['owner'] == user.id:
+                    rule.data['name']= request.form['rule_name']
+                    if request.form['rule_string'] != rule.data['rule']:
+                        rule.update_rule_string(request.form['rule_string'])
+                    rule.data['description'] = request.form['rule_description']
+                    rule.update()
+                    return render_template('rule_builder.html', info="Rule updated successfully")
+                else:
+                    return render_template('rule_builder.html', error="Permission denied")
+            else:
+                return render_template('rule_builder.html', error="Invalid rule")
+
         else:
             return render_template('rule_builder.html')
     else:
@@ -378,13 +413,16 @@ def rules_builder():
                 return render_template('rule_builder.html', 
                     rule_string=rule.data['rule'], 
                     rule_name=rule.data['name'],
-                    rule_description=rule.data['description']
+                    rule_description=rule.data['description'],
+                    rule_id=rule.id,
+                    edit=True,
+                    history=rule.data.get('history', [])
                 )
                 
             else:
                 return render_template('rule_builder.html', error="Invalid rule ID")
         else:
-            return render_template('rule_builder.html')  
+            return render_template('rule_builder.html', new=True)  
 
 
 @app.route('/tos', methods=['GET'])

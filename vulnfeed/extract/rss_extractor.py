@@ -20,7 +20,12 @@ class RSSExtractor(Extractor):
     
     def get_rss_entries(self):
         result_list = []
-        feed = requests.get(self.url)
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0',
+        }
+
+        feed = requests.get(self.url, headers)
 
         if feed.status_code == 200:
             # Remove any namespaces

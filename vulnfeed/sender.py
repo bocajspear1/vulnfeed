@@ -62,6 +62,7 @@ class SenderWorker(threading.Thread):
                 "title": report['raw_title'],
                 "contents": report['raw_contents'],
                 "link": report['link'],
+                "id": report['report_id']
             }
 
             if not report['id'] in report_map:
@@ -132,7 +133,7 @@ class SenderWorker(threading.Thread):
 
         
         # Get reports between the time requested plus some buffer time
-        query_time = current_time - timedelta(hours=(day_diff*24)+4)
+        query_time = current_time - timedelta(hours=(day_diff*24)+2)
         reports = get_feed_reports(query_time)
 
         # Get rule data
@@ -151,11 +152,17 @@ class SenderWorker(threading.Thread):
         scored_reports = []
         unscored_reports = []
 
+        # Clear the last report info
+        u.last_scored_list = []
+        u.last_unscored_list = []
+
         for item in sorted_reports:
             if report_map[item]['score'] > 0:
                 scored_reports.append(report_map[item]['report'])
+                u.last_scored_list.append(report_map[item])
             else:
                 unscored_reports.append(report_map[item]['report'])
+                u.last_unscored_list.append(report_map[item])
 
         # for item in sorted_reports:
         #     print(report_map[item]['score'])
@@ -170,12 +177,15 @@ class SenderWorker(threading.Thread):
             "unscored_reports": unscored_reports
         }
 
+        print(scored_reports)
+
         print("Sending for " + user_email)
-        response = send_email("reports_email.html", "VulnFeed Report for " + time.strftime("%m/%d/%Y"), render_map, user_email)
+        # response = send_email("reports_email.html", "VulnFeed Report for " + time.strftime("%m/%d/%Y"), render_map, user_email)
 
         # Update the users last sent day
         u.last_run = current_day_of_year
-        u.last_status = "Status: " + str(response.status_code) + ", " + response.status_text.decode("utf-8")
+        # u.last_status = "Status: " + str(response.status_code) + ", " + response.status_text.decode("utf-8")
+        u.last_status = "Okay" 
         u.update()
 
     # Process each user
