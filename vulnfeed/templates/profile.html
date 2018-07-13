@@ -30,12 +30,31 @@
                 </ul>
             </p>
             <p>
+                <a class="btn btn-dark" href="/last_report">
+                    View Last Report Details
+                </a>
+            </p>
+            <p>
                 <a class="btn btn-success" data-toggle="collapse" href="#my-rules" role="button" aria-expanded="false" aria-controls="my-rules">
                     My Contributed Rules
                 </a>
                 <div class="collapse" id="my-rules">
                     <div class="card card-body">
-                        
+                        <ul class="list-group">
+                        {% if my_rules|length > 0 %}
+                        {% for rule in my_rules %}
+                            <li class="list-group-item">
+                                <h3>{{ rule.name }}</h3>
+                                <pre>{{ rule.rule }}</pre> <a href="/rule_builder?edit={{ rule.id }}">Edit</a>
+                            </li>
+                        {% endfor %}
+
+                        {% else %}
+                            <li class="list-group-item">
+                                You haven't created any rules. You can create rules for everyone to use <a href="/rule_builder">here.</a>
+                            </li>
+                        {% endif %}
+                        </ul>          
                     </div>
                 </div>
             </p>
@@ -45,9 +64,7 @@
                 </a>
                 <div class="collapse" id="rule-help">
                     <div class="card card-body">
-                        <pre>
-                            {{raw_profile}}
-                        </pre>
+                        <pre>{{raw_profile}}</pre>
                     </div>
                 </div>
             </p>

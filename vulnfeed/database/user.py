@@ -1,5 +1,6 @@
 
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 import pymongo.errors as mongo_errors
 import re
 from datetime import datetime, date, timedelta
@@ -23,7 +24,10 @@ class User:
         if email:
             doc = Client.users.find_one({"email": email})
         elif id:
-            doc = Client.users.find_one({"_id": ObjectId(id)})
+            try:
+                doc = Client.users.find_one({"_id": ObjectId(id)})
+            except InvalidId:
+                pass
 
         self.email = email
         self.rules = []
@@ -73,8 +77,8 @@ class User:
     def is_confirmed(self):
         return self._confirmed
 
-    def update(self):
-        new_data = {
+    def to_obj(self):
+        return {
             "rules": self.rules,
             "days": self.days,
             "last_run": self.last_run,
@@ -85,6 +89,9 @@ class User:
             "last_scored_list": self.last_scored_list,
             "last_unscored_list": self.last_unscored_list
         }
+
+    def update(self):
+        new_data = self.to_obj()
         Client.users.update({"email": self.email}, {"$set": new_data}, multi=False, upsert=False)
 
     def delete(self):
@@ -116,6 +123,13 @@ class User:
 
         full_date = datetime(year, 1, 1) + timedelta(self.last_run - 1)
         return full_date
+
+    def get_minimized_raw(self):
+        return_data = self.to_obj()
+        return_data['password'] = "###########"
+        return_data['last_scored_list'] = ['...List not shown...']
+        return_data['last_unscored_list'] = ['...List not shown...']
+        return return_data
 
     @classmethod
     def new_user(cls, email, password):

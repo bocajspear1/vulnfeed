@@ -21,7 +21,7 @@
         {% include 'header.html' %}
 
         <div class="container" id="main">
-            <form method="POST" action="/rule_builder">
+                <form method="POST" action="/rule_builder">
                 <div class="row">
                     <div class="col">
                         <div class="alert alert-danger" style="{{ 'display:none' if not error }}" id="error_alert" role="alert">
@@ -73,13 +73,31 @@
                         
                     </div>
                 </div>
+            </form>
                 <div class="row">
                     <div class="col">
                         <h4>Test this content</h4>
                         <textarea rows="20" name="input_text" id="input_text">{{ input_text }}</textarea>
                     </div>
                     <div class="col">
+                        {% if suggestions %}
                         <h4>Suggestions</h4>
+                        <table border="0" cellpadding="0" cellspacing="0" width="90%" class="table">
+                            {% for item in suggestions %}
+                                <tr>
+                                    <td><pre>{{ item.rule }}</pre></td>
+                                    <td>
+                                        <form action="/rule_builder" method="POST">
+                                            <button type="submit" class="btn btn-success" name="hide_suggest">Hide</button>
+                                            <input type="hidden" name="suggest_id" value="{{ item.id }}">
+                                            <input type="hidden" name="rule_id" value="{{ rule_id }}">
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                        {% endif %}
+                        {% if history %}
                         <h4>History</h4>
                         <table border="0" cellpadding="0" cellspacing="0" width="90%" class="table">
                             {% for item in history %}
@@ -89,10 +107,11 @@
                                 </tr>
                             {% endfor %}
                         </table>
+                        {% endif %}
                         
                     </div>
                 </div>
-            </form>
+            
         </div>
 
 

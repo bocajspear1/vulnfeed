@@ -180,11 +180,11 @@ class SenderWorker(threading.Thread):
         print(scored_reports)
 
         print("Sending for " + user_email)
-        # response = send_email("reports_email.html", "VulnFeed Report for " + time.strftime("%m/%d/%Y"), render_map, user_email)
+        response = send_email("reports_email.html", "VulnFeed Report for " + time.strftime("%m/%d/%Y"), render_map, user_email)
 
         # Update the users last sent day
         u.last_run = current_day_of_year
-        # u.last_status = "Status: " + str(response.status_code) + ", " + response.status_text.decode("utf-8")
+        u.last_status = "Status: " + str(response.status_code) + ", " + response.status_text.decode("utf-8")
         u.last_status = "Okay" 
         u.update()
 

@@ -43,14 +43,34 @@
             <p>
                 VulnFeed is provided as a service to you, the user. Accounts determined to be abusing this service in any way will be deleted.
             </p>
+            <p>
+                Account data can be viewed on the "My Profile" page, where a majority of raw data is shown in the "Raw Account Data" section. The only data not shown is:
+                <ul>
+                    <li>The password hash (for security)</li>
+                    <li>The list containing the scored reports given in the the last VulnFeed report (for brevity)</li>
+                    <li>The list containing the unscored reports given in the the last VulnFeed report (for brevity)</li>
+                </ul>
+                An account can be deleted at any time using the "Delete Account" action also on the profile page. This will remove the account and its data from the database. The only data that will remain will be:
+                <ul>
+                    <li>Any content placed into rules while using the removed account</li>
+                    <li>Any rules created by the account (This is linked to an account by a non-personally identifying ID value, which cannot be linked to an account once the account is deleted)</li>
+                </ul>
+                If you wish to remove rules created by an account, please contact the admin.
+            </p>
             <h3>Content</h3>
             <p>
-                The only content generated on VulnFeed is the rules. All the contents of the feeds are not content of VulnFeed and the operator of this service is not responsible for the content and accuracy of that content. VulnFeed only organizes contents as does not create vulnerabilty feed content.
+                The only content generated on VulnFeed is the rules. All the contents of the feeds are not content of VulnFeed and the operator of this service is not responsible for the content and accuracy of that content. VulnFeed only organizes contents and does not create vulnerabilty feed content. 
+            </p>
+            <p>
+                The user of this service acknowledges the operator of this service nor other users of this service are responsible for the accuracy of rules. Rules are made by the community in a best effort manner, and shouldn't be expected to 100% of the time. This is why unscored reports are sent alongside scored reports so that mis-matches can be identified and rules adjusted.
             </p>
             <p>
                 All rules generated on VulnFeed are public to all users of VulnFeed. <strong>Do not put private data in rules!</strong> Contents of rules that are determined to contain private data or personally identifiable data (such as emails, addresses, etc.) will be removed. Rules containing offensive or illegal content will be removed as well and offending accounts will be deleted.
             </p>
-            
+            <h3>This Terms of Service</h3>
+            <p>
+                This terms of service may change at any time. Users will be notified by email when changes are made. Users who do not agree with an updated terms of service may give suggestions on the service's GitHub page or use the provided "Delete Account" functionality available on the profile page.
+            </p>
         </div>
 
         {% include 'footer.html' %}

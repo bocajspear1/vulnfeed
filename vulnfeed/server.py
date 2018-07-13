@@ -1,3 +1,4 @@
+# This is the web server for VulnFeed
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import pymongo.errors as mongo_errors
@@ -18,6 +19,7 @@ from database.setup import setup_database
 from scorer.parser import VulnFeedRuleParser
 
 from util.email_sender import send_email
+import util.string_validator as string_validator
 
 from database.security import address_failed_login, clear_failed_login
 
@@ -44,7 +46,7 @@ def home():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        if not re.match(r"[^@$<>;'\"]+@[^@$<>;'\"]+\.[^@$<>;'\"]+", request.form['email']):
+        if not string_validator.is_valid_email(request.form['email']):
             return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Invalid email address")
         elif request.form['email'] != request.form['email2']:
             return render_template('signup.html', sitekey=conf.recaptcha_sitekey, server_error="Email addresses do not match!")
@@ -185,13 +187,19 @@ def login():
 
         if address_failed_login(request.remote_addr):
             return render_template('login.html', server_error="You have exceeded the number of fail logins. Try again later")
+        
+        user_email = request.form['email']
+        if not string_validator.is_valid_email(user_email):
+            session['logged_in'] = False
+            session['user_email'] = ""
+            message = "Incorrect user/password"
 
         message = ""
-        user = User(email=request.form['email'])
+        user = User(email=user_email)
 
         if user.login(request.form['password']) and user.is_confirmed():
             session['logged_in'] = True
-            session['user_email'] = request.form['email']
+            session['user_email'] = user_email
             clear_failed_login(request.remote_addr)
             return redirect("/", code=302)
         # User doesn't exist
@@ -255,12 +263,17 @@ def profile():
 
     user = User(email=session['user_email'])
 
+    raw_data = json.dumps(user.get_minimized_raw(), indent=4, separators=(',', ': '))
+
+    user_rules = rules.get_rules(user=user.id)
 
     return render_template('profile.html', 
                             email=user.email, 
                             last_status=user.last_status, 
                             rule_count=len(user.get_rules()),
-                            last_sent=user.get_last_run_date().strftime('%m/%d/%Y'))
+                            last_sent=user.get_last_run_date().strftime('%m/%d/%Y'),
+                            my_rules=user_rules,
+                            raw_profile=raw_data)
 
 # Delete page
 @app.route('/delete', methods=['GET', 'POST'])
@@ -376,27 +389,58 @@ def rules_builder():
     user = User(email=session['user_email'])
 
     if request.method == 'POST':
-        # Check for test
-        if request.form['rule_name'] and request.form['rule_string'] and "save" in request.form:
-            new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'], user.id)
-            return render_template('rule_builder.html', info="Your rule has been create and saved successfully")
-        elif request.form['rule_name'] and request.form['rule_string'] and request.form['rule_id'] and "update" in request.form:
+        print(request.form)
+        if "rule_name" in request.form and "rule_string" in request.form:
+            if "save" in request.form:
+                new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'], user.id)
+                return render_template('rule_builder.html', info="Your rule has been create and saved successfully")
+            elif "update" in request.form:
 
+                rule = Rule(request.form['rule_id'])
+
+                if rule.data:
+                    if rule.data['owner'] == user.id:
+                        rule.data['name']= request.form['rule_name']
+                        if request.form['rule_string'] != rule.data['rule']:
+                            rule.update_rule_string(request.form['rule_string'])
+                        rule.data['description'] = request.form['rule_description']
+                        rule.update()
+                        return render_template('rule_builder.html', info="Rule updated successfully")
+                    else:
+                        return render_template('rule_builder.html', error="Permission denied")
+                else:
+                    return render_template('rule_builder.html', error="Invalid rule")
+            elif "suggest" in request.form:
+
+                rule = Rule(request.form['rule_id'])
+
+                if rule.data:
+                    if rule.data['owner'] == user.id:
+                        return render_template('rule_builder.html', error="You cannot suggest for your own rule!")
+                    else:
+                        success = rule.add_suggestion(user.id, request.form['rule_string'])
+                        if success:
+                            rule.update()
+                            return render_template('rule_builder.html', info="Your suggestion has been made")
+                        else:
+                            return render_template('rule_builder.html', error="You have already made that suggestion!")
+                else:
+                    return render_template('rule_builder.html', error="Invalid rule")
+            else:
+                return render_template('rule_builder.html', error="Invalid action")
+        elif "hide_suggest" in request.form and "rule_id" in request.form:
             rule = Rule(request.form['rule_id'])
 
+            # Ensure a valid rule and that the user owns this rule
             if rule.data:
                 if rule.data['owner'] == user.id:
-                    rule.data['name']= request.form['rule_name']
-                    if request.form['rule_string'] != rule.data['rule']:
-                        rule.update_rule_string(request.form['rule_string'])
-                    rule.data['description'] = request.form['rule_description']
+                    rule.hide_suggestion(request.form['suggest_id'])
                     rule.update()
-                    return render_template('rule_builder.html', info="Rule updated successfully")
+                    return redirect("/rule_builder?edit=" + rule.id, code=302)
                 else:
                     return render_template('rule_builder.html', error="Permission denied")
             else:
-                return render_template('rule_builder.html', error="Invalid rule")
-
+                return render_template('rule_builder.html', error="Invalid rule id")
         else:
             return render_template('rule_builder.html')
     else:
@@ -410,14 +454,47 @@ def rules_builder():
         elif "edit" in request.args:
             rule = Rule(request.args.get("edit"))
             if rule.data:
-                return render_template('rule_builder.html', 
-                    rule_string=rule.data['rule'], 
-                    rule_name=rule.data['name'],
-                    rule_description=rule.data['description'],
-                    rule_id=rule.id,
-                    edit=True,
-                    history=rule.data.get('history', [])
-                )
+
+                if rule.data['owner'] == user.id:
+
+                    raw_suggestions = rule.data.get('suggestions', [])
+                    cleaned_suggestions = []
+
+                    for suggestion in raw_suggestions:
+                        if not suggestion['hidden']:
+                            cleaned_suggestions.append({"id": suggestion['suggest_id'], "rule": suggestion['rule']})
+
+                    return render_template('rule_builder.html', 
+                        rule_string=rule.data['rule'], 
+                        rule_name=rule.data['name'],
+                        rule_description=rule.data['description'],
+                        rule_id=rule.id,
+                        edit=True,
+                        history=rule.data.get('history', []),
+                        suggestions=cleaned_suggestions
+                    )
+                else:
+
+                    owner = User(id=rule.data['owner'])
+                    print(owner.id)
+                    if not owner.id:
+                        return render_template('rule_builder.html', 
+                            rule_string=rule.data['rule'], 
+                            rule_name=rule.data['name'],
+                            rule_description=rule.data['description'],
+                            rule_id=rule.id,
+                            history=rule.data.get('history', []),
+                            info="The owner of this rule no longer exists. You can only create a copy of this rule."
+                        )
+                    else:
+                        return render_template('rule_builder.html', 
+                            rule_string=rule.data['rule'], 
+                            rule_name=rule.data['name'],
+                            rule_description=rule.data['description'],
+                            rule_id=rule.id,
+                            suggest=True,
+                            history=rule.data.get('history', [])
+                        )
                 
             else:
                 return render_template('rule_builder.html', error="Invalid rule ID")
