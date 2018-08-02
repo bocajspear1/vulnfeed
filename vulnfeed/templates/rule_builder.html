@@ -61,6 +61,7 @@
                         {% if rule_id %}
                         <input type="hidden" id="rule_id" value="{{rule_id}}" name="rule_id">
                         {% endif %}
+                        <input type="hidden" name="csrftoken" value="{{ csrftoken }}">
 
                         <button class="btn btn-primary" name="test" id="test-button">Test</button>
                         {% if edit %}
@@ -118,6 +119,9 @@
         {% include 'footer.html' %}
 
         <script>
+
+            var CSRFTOKEN = '{{ csrftoken }}';
+
             $(function() {
                 $("#test-button").click(function(e){
                     $("#error_alert").hide();

@@ -128,6 +128,7 @@
 
         <script>
 
+            var CSRFTOKEN = '{{ csrftoken }}';
             var known_enabled_rules = [];
 
             function get_enabled_rules() {
@@ -162,6 +163,7 @@
 
                 new_config['rules'] = get_enabled_rules();
                 new_config['days'] = get_enabled_days();
+                new_config['csrftoken'] = CSRFTOKEN;
                 
                 $.ajax({
                     url: "/update_user_config",

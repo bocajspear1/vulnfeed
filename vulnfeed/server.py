@@ -7,9 +7,10 @@ from flask import Flask, flash, redirect, render_template, request, session, abo
 import os
 import json
 import re
+import binascii
 import requests
 from datetime import date, datetime
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import URLSafeTimedSerializer, URLSafeSerializer
 
 from database.user import User
 import database.rules as rules
@@ -22,7 +23,7 @@ from util.email_sender import send_email
 import util.string_validator as string_validator
 
 from database.security import address_failed_login, clear_failed_login
-
+from urllib.parse import urlparse
 
 from config import Config
 
@@ -32,7 +33,33 @@ app = Flask(__name__)
 app.secret_key = conf.secret
 
 timed_serializer = URLSafeTimedSerializer(conf.secret)
+serializer = URLSafeSerializer(conf.secret)
 setup_database()
+
+
+@app.before_request
+def before_request():
+    ref_origin_check = False
+    for header in request.headers:
+        if header[0].lower() == "referer" or header[0].lower() == "origin":
+            referer = urlparse(header[1])
+            config_domain = urlparse(conf.domain)
+            if referer.netloc.lower() == config_domain.netloc.lower():
+                ref_origin_check = True
+            else:
+                print(header[0] + " is wrong!")
+    
+    if not ref_origin_check:
+        return "Referer/Origin header validation failed"
+
+@app.after_request
+def after_request(resp):
+    resp.headers['X-Frame-Options'] = "SAMEORIGIN" 
+    return resp 
+
+@app.context_processor
+def add_template_helpers():
+    return {'csrftoken': session['csrftoken']}
 
 # Home page
 @app.route('/')
@@ -41,6 +68,10 @@ def home():
         return render_template('info.html')
     else:
         return render_template('home.html')
+
+##################################################
+# User Account Pages
+##################################################
 
 # Signup Page
 @app.route('/signup', methods=['GET', 'POST'])
@@ -99,6 +130,9 @@ def verify(token):
     except Exception as e:
         return "Could not parse token"
 
+    if not string_validator.is_valid_email(email):
+        return "Invalid email"
+
     user = User(email=email)
 
     if user.hash is not None and user.verify_token == token:
@@ -109,13 +143,12 @@ def verify(token):
     else:
         return "Invalid token"
 
-
 # Forgot password page
 @app.route('/forgot', methods=['GET', 'POST'])
 def forgot():
 
     if request.method == 'POST':
-        if not re.match(r"[^@$<>;'\"]+@[^@$<>;'\"]+\.[^@$<>;'\"]+", request.form['email']):
+        if not string_validator.is_valid_email(request.form['email']):
             return render_template('forgot.html', sitekey=conf.recaptcha_sitekey, server_error="Invalid email address")
         else:
             # Captcha
@@ -159,6 +192,9 @@ def resetpass(token):
     except Exception as e:
         return "Could not parse token"
 
+    if not string_validator.is_valid_email(email):
+        return "Invalid email"
+
     user = User(email=email)
 
     if user.verify_token != token:
@@ -201,6 +237,7 @@ def login():
             session['logged_in'] = True
             session['user_email'] = user_email
             clear_failed_login(request.remote_addr)
+            session['csrftoken'] = serializer.dumps(binascii.hexlify(os.urandom(128)).decode('utf-8'), salt=conf.email_salt)
             return redirect("/", code=302)
         # User doesn't exist
         elif user.hash == None:
@@ -221,6 +258,20 @@ def login():
     else:
         return render_template('login.html')
 
+# Logout page
+@app.route('/logout')
+def logout():
+    if session.get('logged_in'):
+        session['logged_in'] = False
+        session['user_email'] = ""
+        session['csrftoken'] = ""
+    
+    return redirect("/login", code=302)
+
+##################################################
+# App Pages
+##################################################
+
 # Report viewer page
 @app.route('/report_viewer', methods=['GET'])
 def report_viewer():
@@ -229,7 +280,6 @@ def report_viewer():
 
     day = request.args.get('day')
     date_obj = None
-
     
     if not day:
         date_obj = datetime.combine(date.today(), datetime.min.time())
@@ -253,7 +303,6 @@ def last_report():
         return render_template('last_report.html', last_scored_reports=user.last_scored_list, last_unscored_reports=user.last_unscored_list)
     else:
         return "ERROR: User not found!"
-    # 
 
 # Profile page
 @app.route('/profile', methods=['GET'])
@@ -285,31 +334,20 @@ def delete():
 
     if request.method == 'POST':
         if 'delete_token' in request.form:
+            
             try:
-                email = timed_serializer.loads(request.form['delete_token'], salt=conf.email_salt, max_age=7200)
+                serializer.loads(request.form['delete_token'], salt=conf.email_salt)
             except Exception as e:
                 return "Could not parse token"
 
-            if email == user.email:
+            if request.form['delete_token'] == session['csrftoken']:
                 user.delete()
                 del user
                 return redirect("/logout", code=302)
         else:
             return "Nope"
     else:
-    
-        delete_token = timed_serializer.dumps(user.email, salt=conf.email_salt)
-
-        return render_template('delete.html', delete_token=delete_token)
-
-# Logout page
-@app.route('/logout')
-def logout():
-    if session.get('logged_in'):
-        session['logged_in'] = False
-        session['user_email'] = ""
-    
-    return redirect("/login", code=302)
+        return render_template('delete.html', delete_token=session['csrftoken'])
 
 @app.route('/all_rules.json')
 def rules_list():
@@ -338,12 +376,21 @@ def update_user_rules():
         new_config = request.get_json()
         user.set_rules(new_config['rules'])
         user.set_days(new_config['days'])
+
+        
+        try:
+            serializer.loads(new_config['csrftoken'], salt=conf.email_salt)
+        except Exception as e:
+            return "Could not parse CSRF token"
+
+        if new_config['csrftoken'] != session['csrftoken']:
+            return jsonify({"status": True})
+
         user.update()
         return jsonify({"status": True})
     except Exception as e:
         print (e)
         return jsonify({"status": False})
-
 
 @app.route('/user_config.json')
 def user_rules():
@@ -364,12 +411,17 @@ def rule_test():
     error = None
     output = ""
     score = -1
+    
+
     try:
         test_input = request.get_json()
-        parser.parse_rule(test_input['rule_string'])
-        score, _ = parser.process_raw_text(test_input['test_data'])
+        test_rule = test_input['rule_string']
+        if not string_validator.can_be_rule(test_rule):
+            error = "Invalid rule"
+        else:
+            parser.parse_rule(test_input['rule_string'])
+            score, _ = parser.process_raw_text(test_input['test_data'])
     except ValueError as e:
-        print("error!")
         error = str(e)
 
     resp = {
@@ -389,21 +441,65 @@ def rules_builder():
     user = User(email=session['user_email'])
 
     if request.method == 'POST':
-        print(request.form)
+
+        # Validate CSRF Token
+        try:
+            serializer.loads(request.form['csrftoken'], salt=conf.email_salt)
+        except Exception as e:
+            return "Could not parse CSRF token"
+
+        if request.form['csrftoken'] != session['csrftoken']:
+            return "CSRF token validation failed"
+
         if "rule_name" in request.form and "rule_string" in request.form:
+            # Save a new rule
             if "save" in request.form:
-                new_rule = Rule.new_rule(request.form['rule_name'], request.form['rule_string'], request.form['rule_description'], user.id)
+                # Get user input
+                rule_name = request.form['rule_name']
+                save_rule = request.form['rule_string']
+                description = request.form['rule_description']
+
+                # Validate user input
+                if not string_validator.can_be_rule(save_rule):
+                    return render_template('rule_builder.html', error="Invalid rule")
+                if not string_validator.is_simple_string(description):
+                    return render_template('rule_builder.html', error="Invalid characters in description")
+                if not string_validator.is_simple_string(rule_name):
+                    return render_template('rule_builder.html', error="Invalid characters in rule name")
+                
+                new_rule = Rule.new_rule(rule_name, save_rule, description, user.id)
                 return render_template('rule_builder.html', info="Your rule has been create and saved successfully")
+            # Update a rule
             elif "update" in request.form:
 
-                rule = Rule(request.form['rule_id'])
+                # Validate rule ID
+                rule_id = request.form['rule_id']
+                if not string_validator.is_valid_id(rule_id):
+                    return render_template('rule_builder.html', error="Invalid rule")
 
-                if rule.data:
-                    if rule.data['owner'] == user.id:
-                        rule.data['name']= request.form['rule_name']
-                        if request.form['rule_string'] != rule.data['rule']:
-                            rule.update_rule_string(request.form['rule_string'])
-                        rule.data['description'] = request.form['rule_description']
+
+                rule = Rule(rule_id)
+
+                if rule.id:
+                    if rule.owner == user.id:
+
+                        # Get user input
+                        rule_name = request.form['rule_name']
+                        update_rule = request.form['rule_string']
+                        description = request.form['rule_description']
+
+                        # Validate user input
+                        if not string_validator.can_be_rule(update_rule):
+                            return render_template('rule_builder.html', error="Invalid rule")
+                        if not string_validator.is_simple_string(description):
+                            return render_template('rule_builder.html', error="Invalid characters in description")
+                        if not string_validator.is_simple_string(rule_name):
+                            return render_template('rule_builder.html', error="Invalid characters in rule name")
+
+                        rule.name = rule_name
+                        if request.form['rule_string'] != rule.rule:
+                            rule.update_rule_string(update_rule)
+                        rule.description = description
                         rule.update()
                         return render_template('rule_builder.html', info="Rule updated successfully")
                     else:
@@ -411,14 +507,22 @@ def rules_builder():
                 else:
                     return render_template('rule_builder.html', error="Invalid rule")
             elif "suggest" in request.form:
+                rule_id = request.form['rule_id']
+                if not string_validator.is_valid_id(rule_id):
+                    return render_template('rule_builder.html', error="Invalid rule")
 
-                rule = Rule(request.form['rule_id'])
+                rule = Rule(rule_id)
 
-                if rule.data:
-                    if rule.data['owner'] == user.id:
+                if rule.id:
+                    if rule.owner == user.id:
                         return render_template('rule_builder.html', error="You cannot suggest for your own rule!")
                     else:
-                        success = rule.add_suggestion(user.id, request.form['rule_string'])
+                        suggestion_string = request.form['rule_string']
+                    
+                        if not string_validator.can_be_rule(suggestion_string):
+                            return render_template('rule_builder.html', error="Invalid suggestion")
+                        success = rule.add_suggestion(user.id, suggestion_string)
+
                         if success:
                             rule.update()
                             return render_template('rule_builder.html', info="Your suggestion has been made")
@@ -428,13 +532,22 @@ def rules_builder():
                     return render_template('rule_builder.html', error="Invalid rule")
             else:
                 return render_template('rule_builder.html', error="Invalid action")
+
         elif "hide_suggest" in request.form and "rule_id" in request.form:
-            rule = Rule(request.form['rule_id'])
+            rule_id = request.form['rule_id']
+            if not string_validator.is_valid_id(rule_id):
+                return render_template('rule_builder.html', error="Invalid rule")
+
+            rule = Rule(rule_id)
 
             # Ensure a valid rule and that the user owns this rule
-            if rule.data:
-                if rule.data['owner'] == user.id:
-                    rule.hide_suggestion(request.form['suggest_id'])
+            if rule.id:
+                if rule.owner == user.id:
+                    suggest_id = request.form['suggest_id']
+                    if not string_validator.is_valid_id(suggest_id):
+                        return render_template('rule_builder.html', error="Invalid suggestion")
+
+                    rule.hide_suggestion()
                     rule.update()
                     return redirect("/rule_builder?edit=" + rule.id, code=302)
                 else:
@@ -445,19 +558,27 @@ def rules_builder():
             return render_template('rule_builder.html')
     else:
         if "test_report" in request.args:
-            report = database.reports.get_report(request.args.get("test_report"))
+            report_id = request.args.get("test_report")
+            if not string_validator.is_valid_id(report_id):
+                return render_template('rule_builder.html', error="Invalid report")
+
+            report = database.reports.get_report(report_id)
             if report is not None:
                 return render_template('rule_builder.html', input_text=report['contents'])
             else:
                 return render_template('rule_builder.html', error="Invalid report ID")
                   
         elif "edit" in request.args:
-            rule = Rule(request.args.get("edit"))
-            if rule.data:
+            rule_id = request.args.get("edit")
+            if not string_validator.is_valid_id(rule_id):
+                return render_template('rule_builder.html', error="Invalid report")
 
-                if rule.data['owner'] == user.id:
+            rule = Rule(rule_id)
+            if rule.id:
 
-                    raw_suggestions = rule.data.get('suggestions', [])
+                if rule.owner == user.id:
+
+                    raw_suggestions = rule.suggestions
                     cleaned_suggestions = []
 
                     for suggestion in raw_suggestions:
@@ -465,35 +586,35 @@ def rules_builder():
                             cleaned_suggestions.append({"id": suggestion['suggest_id'], "rule": suggestion['rule']})
 
                     return render_template('rule_builder.html', 
-                        rule_string=rule.data['rule'], 
-                        rule_name=rule.data['name'],
-                        rule_description=rule.data['description'],
+                        rule_string=rule.rule,
+                        rule_name=rule.name,
+                        rule_description=rule.description,
                         rule_id=rule.id,
                         edit=True,
-                        history=rule.data.get('history', []),
+                        history=rule.history,
                         suggestions=cleaned_suggestions
                     )
                 else:
 
-                    owner = User(id=rule.data['owner'])
-                    print(owner.id)
+                    owner = User(id=rule.owner)
+                    
                     if not owner.id:
                         return render_template('rule_builder.html', 
-                            rule_string=rule.data['rule'], 
-                            rule_name=rule.data['name'],
-                            rule_description=rule.data['description'],
+                            rule_string=rule.rule, 
+                            rule_name=rule.name,
+                            rule_description=rule.description,
                             rule_id=rule.id,
-                            history=rule.data.get('history', []),
+                            history=rule.history,
                             info="The owner of this rule no longer exists. You can only create a copy of this rule."
                         )
                     else:
                         return render_template('rule_builder.html', 
-                            rule_string=rule.data['rule'], 
-                            rule_name=rule.data['name'],
-                            rule_description=rule.data['description'],
+                            rule_string=rule.rule, 
+                            rule_name=rule.name,
+                            rule_description=rule.description,
                             rule_id=rule.id,
                             suggest=True,
-                            history=rule.data.get('history', [])
+                            history=rule.history
                         )
                 
             else:
