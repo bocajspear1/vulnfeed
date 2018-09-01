@@ -39,14 +39,13 @@ setup_database()
 
 @app.before_request
 def before_request():
-    ref_origin_check = False
+    ref_origin_check = True
     for header in request.headers:
         if header[0].lower() == "referer" or header[0].lower() == "origin":
             referer = urlparse(header[1])
             config_domain = urlparse(conf.domain)
-            if referer.netloc.lower() == config_domain.netloc.lower():
-                ref_origin_check = True
-            else:
+            if referer.netloc.lower() != config_domain.netloc.lower():
+                ref_origin_check = False
                 print(header[0] + " is wrong!")
     
     if not ref_origin_check:
@@ -59,6 +58,8 @@ def after_request(resp):
 
 @app.context_processor
 def add_template_helpers():
+    if not 'csrftoken' in session:
+        session['csrftoken'] = ""
     return {'csrftoken': session['csrftoken']}
 
 # Home page
@@ -475,7 +476,7 @@ def rules_builder():
                 # Validate rule ID
                 rule_id = request.form['rule_id']
                 if not string_validator.is_valid_id(rule_id):
-                    return render_template('rule_builder.html', error="Invalid rule")
+                    return render_template('rule_builder.html', error="Invalid rule id")
 
 
                 rule = Rule(rule_id)
@@ -505,11 +506,11 @@ def rules_builder():
                     else:
                         return render_template('rule_builder.html', error="Permission denied")
                 else:
-                    return render_template('rule_builder.html', error="Invalid rule")
+                    return render_template('rule_builder.html', error="Invalid rule id")
             elif "suggest" in request.form:
                 rule_id = request.form['rule_id']
                 if not string_validator.is_valid_id(rule_id):
-                    return render_template('rule_builder.html', error="Invalid rule")
+                    return render_template('rule_builder.html', error="Invalid rule id")
 
                 rule = Rule(rule_id)
 
@@ -529,14 +530,14 @@ def rules_builder():
                         else:
                             return render_template('rule_builder.html', error="You have already made that suggestion!")
                 else:
-                    return render_template('rule_builder.html', error="Invalid rule")
+                    return render_template('rule_builder.html', error="Invalid rule id")
             else:
                 return render_template('rule_builder.html', error="Invalid action")
 
         elif "hide_suggest" in request.form and "rule_id" in request.form:
             rule_id = request.form['rule_id']
             if not string_validator.is_valid_id(rule_id):
-                return render_template('rule_builder.html', error="Invalid rule")
+                return render_template('rule_builder.html', error="Invalid rule id")
 
             rule = Rule(rule_id)
 

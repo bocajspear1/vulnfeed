@@ -25,7 +25,7 @@ class Config():
         self.dkim_privkey = ""
         self.dkim_domain = ""
         self.dkim_selector = ""
-        if raw_config['dkim']:
+        if 'dkim' in raw_config and raw_config['dkim']:
             self.has_dkim = True
             self.dkim_privkey = raw_config['dkim']['privkey']
             if not os.path.exists(self.dkim_privkey):
