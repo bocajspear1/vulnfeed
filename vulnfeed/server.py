@@ -11,8 +11,9 @@ import binascii
 import requests
 from datetime import date, datetime
 from itsdangerous import URLSafeTimedSerializer, URLSafeSerializer
+from feedgen.feed import FeedGenerator
 
-from database.user import User
+from database.user import User, get_user_by_feed
 import database.rules as rules
 from database.rules import Rule
 import database.reports
@@ -239,6 +240,11 @@ def login():
             session['user_email'] = user_email
             clear_failed_login(request.remote_addr)
             session['csrftoken'] = serializer.dumps(binascii.hexlify(os.urandom(128)).decode('utf-8'), salt=conf.email_salt)
+
+            if user.feed_id is None:
+                user.generate_feed_id()
+                user.update()
+
             return redirect("/", code=302)
         # User doesn't exist
         elif user.hash == None:
@@ -349,6 +355,30 @@ def delete():
             return "Nope"
     else:
         return render_template('delete.html', delete_token=session['csrftoken'])
+
+# This view requires no authentication, and depends on the uniqueness of the string
+@app.route('/feed/<feed_id>.rss')
+def feed(feed_id):
+    user = get_user_by_feed(feed_id)
+    if user:
+        generator = FeedGenerator()
+        generator.id(str(feed_id))
+        generator.title("Vulnfeed Feed")
+        generator.description('Vulnfeed data in RSS form')
+        generator.link(href=request.url)
+        generator.language('en')
+
+        for scored_item in user.last_scored_list:
+            entry = generator.add_entry()
+            entry.id(scored_item['report']['id'])
+            entry.title(scored_item['report']['title'])
+            entry.description(scored_item['report']['contents'])
+            entry.link(href=scored_item['report']['link'])
+
+
+        return generator.rss_str(pretty=True)
+    else:
+        return "Not found"
 
 @app.route('/all_rules.json')
 def rules_list():
