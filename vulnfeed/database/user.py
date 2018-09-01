@@ -8,6 +8,7 @@ from datetime import datetime, date, timedelta
 from database import Client
 from passlib.hash import pbkdf2_sha256
 from passlib import pwd
+from passlib.utils import getrandstr, rng
 
 def get_users(start=0, limit=50):
     user_chunk = []
@@ -16,6 +17,9 @@ def get_users(start=0, limit=50):
         user_chunk.append(str(item['email']))
     return user_chunk
 
+def get_user_by_feed(feed_id):
+    user = Client.users.find_one({"feed_id": feed_id})
+    return User(id=user['_id'])
 
 class User:
 
@@ -41,6 +45,7 @@ class User:
         self.last_scored_list = []
         self.last_unscored_list = []
         self.id = None
+        self.feed_id = None
 
         if doc:
             self.rules = doc['rules']
@@ -52,7 +57,17 @@ class User:
             self.last_status = doc.get("last_status")
             self.last_scored_list = doc.get("last_scored_list", [])
             self.last_unscored_list = doc.get("last_unscored_list", [])
+            self.feed_id = doc.get("feed_id", None)
             self.id = str(doc['_id'])
+
+    def generate_feed_id(self):
+
+        done = False
+        while not done:
+            self.feed_id = getrandstr(rng, "qwertyuiopasdfghjklzxcvbnm1234567890", 100)
+            user_list_cursor = Client.users.find({"feed_id": self.feed_id})
+            if user_list_cursor.count() == 0:
+                done = True
 
     def set_days(self, new_days):
         if not isinstance(new_days, list):
@@ -87,7 +102,8 @@ class User:
             "password": self.hash,
             "last_status": self.last_status,
             "last_scored_list": self.last_scored_list,
-            "last_unscored_list": self.last_unscored_list
+            "last_unscored_list": self.last_unscored_list,
+            "feed_id": self.feed_id
         }
 
     def update(self):
