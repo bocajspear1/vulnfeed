@@ -329,7 +329,8 @@ def profile():
                             rule_count=len(user.get_rules()),
                             last_sent=user.get_last_run_date().strftime('%m/%d/%Y'),
                             my_rules=user_rules,
-                            raw_profile=raw_data)
+                            raw_profile=raw_data,
+                            feed_id=user.feed_id)
 
 # Delete page
 @app.route('/delete', methods=['GET', 'POST'])
